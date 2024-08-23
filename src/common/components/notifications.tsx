@@ -1,6 +1,5 @@
 import { XMarkIcon } from "@heroicons/react/24/outline";
 import { Button, Dialog, Typography } from "@material-tailwind/react";
-import { getCookie } from "cookies-next";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import {
@@ -10,73 +9,36 @@ import {
   useEffect,
   useState,
 } from "react";
-import api from "../services/api";
 import { AuthContext } from "./AuthContext";
 import EditVisitaModal from "./editvisita";
+import ReagendarVisitaPendenteModal from "./editvisitapendente";
+import NotasModal2 from "./notasmodal2";
+import NotasModal3 from "./notasmodal3";
 
 export default function NotificacoesModal({
   open,
   setOpen,
   setUpdateKey,
+  id1,
+  id2,
 }: {
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
   setUpdateKey: Dispatch<SetStateAction<number>>;
+  id1: number;
+  id2: number;
 }) {
   const router = useRouter();
-  const id = router.query.id;
+  const { id, idagenda } = router.query;
   const data = useContext(AuthContext);
   const [showEdit, setShowEdit] = useState<boolean>(false);
   const [idVisita, setIdVisita] = useState<number>(0);
-
-  async function handleAcceptVisit() {
-    const token = getCookie("token");
-    if (token) {
-      api.defaults.headers["Authorization"] = `Bearer ${token}`;
-      try {
-        const response = await api.put("/visita/acceptVisit", {
-          id: id,
-        });
-        if (response.status === 200) {
-          console.log(response.data);
-          setUpdateKey((prev) => prev + 1);
-          router.reload();
-          setOpen(false);
-        }
-        if (response.data.Error) {
-          setIdVisita(Number(id));
-          const accepted = window.confirm(
-            "Horário Sobreposto! Deseja alterar a data dessa visita?"
-          );
-          if (accepted) {
-            setShowEdit(true);
-          }
-        }
-      } catch (error) {
-        console.error("Erro ao aceitar visita:", error);
-      }
-    }
-  }
-
-  async function handleRejectVisit() {
-    const token = getCookie("token");
-    if (token) {
-      api.defaults.headers["Authorization"] = `Bearer ${token}`;
-      try {
-        const response = await api.delete("/visita/delete/" + id);
-
-        if (response.status === 200) {
-          console.log(response.data);
-          setUpdateKey((prev) => prev + 1);
-          setOpen(false);
-        }
-      } catch (error) {
-        console.error("Erro ao rejeitar visita:", error);
-      }
-    }
-  }
+  const [showDialog, setshowDialog] = useState<boolean>(false);
+  const [showDialog2, setshowDialog2] = useState<boolean>(false);
+  const [showDialog3, setshowDialog3] = useState<boolean>(false);
 
   const handleClose = () => {
+    // Fecha o diálogo quando chamado
     setOpen(false);
   };
 
@@ -87,9 +49,9 @@ export default function NotificacoesModal({
   return (
     <Dialog open={open} size="xs" className="h-36">
       <div className="grid grid-cols-2">
-        <div className="flex ml-28 w-96">
+        <div className="flex ml-16 w-96">
           <Typography className="p-6" variant="h5">
-            Adicionar nova nota
+            Validação da Visita
           </Typography>
         </div>
         <Link
@@ -101,27 +63,50 @@ export default function NotificacoesModal({
         </Link>
       </div>
       <hr className="border-1" />
-      <div className="flex justify-center gap-20 mt-3 ">
+      <div className="flex justify-center gap-5 mt-3 ">
         <Button
-          className="bg-red-500 w-32"
+          className="bg-red-500 w-22"
           onClick={() => {
-            handleRejectVisit();
+            setshowDialog(true);
           }}
         >
           Rejeitar
         </Button>
         <Button
-          className="bg-green-500 w-32"
+          className="bg-gray-400 w-22"
           onClick={() => {
-            handleAcceptVisit();
+            setshowDialog2(true);
+          }}
+        >
+          Aguardar
+        </Button>
+        <Button
+          className="bg-green-500 w-22"
+          onClick={() => {
+            setshowDialog3(true);
           }}
         >
           Aceitar
         </Button>
-        <EditVisitaModal
-          open={showEdit}
-          setOpen={setShowEdit}
-          idVisita={idVisita}
+        <EditVisitaModal open={showEdit} setOpen={setShowEdit} idVisita={id1} />
+        <NotasModal2
+          open={showDialog}
+          setOpen={setshowDialog}
+          id={id1}
+          setUpdateKey={setUpdateKey}
+        />
+        <NotasModal3
+          open={showDialog2}
+          setOpen={setshowDialog2}
+          id={id1}
+          setUpdateKey={setUpdateKey}
+        />
+        <ReagendarVisitaPendenteModal
+          open={showDialog3}
+          setOpen={setshowDialog3}
+          idvisita={id1}
+          idagenda={id2}
+          setUpdateKey={setUpdateKey}
         />
       </div>
     </Dialog>

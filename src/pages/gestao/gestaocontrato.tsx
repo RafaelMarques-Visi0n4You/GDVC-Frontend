@@ -5,9 +5,9 @@ import DetalheContratoModal from "@/common/components/detalhecontrato";
 import UpdateContratoModal from "@/common/components/updatecontrato";
 import api from "@/common/services/api";
 import {
+  ClipboardDocumentListIcon,
   PencilSquareIcon,
   PlusIcon,
-  UserGroupIcon,
 } from "@heroicons/react/24/outline";
 import {
   Button,
@@ -81,7 +81,10 @@ export default function DefaultTable() {
   const data = useContext(AuthContext);
 
   useEffect(() => {
-    if (data?.user?.tipo_utilizador !== "nivel4") {
+    if (
+      data?.user?.tipo_utilizador !== "nivel4" &&
+      data?.user?.tipo_utilizador !== "nivel5"
+    ) {
       router.push("/permissiondenied");
     }
     loadData();
@@ -244,7 +247,7 @@ export default function DefaultTable() {
         </div>
       </div>
       <br />
-      <Card className="h-full w-full overflow-scroll">
+      <Card className="h-full w-full overflow-x-auto">
         <table className="w-full min-w-max table-auto text-left">
           <thead>
             <tr>
@@ -309,7 +312,7 @@ export default function DefaultTable() {
                         }}
                         onClick={() => setShowModalDetalhes(!showModalDetalhes)}
                       >
-                        <UserGroupIcon className="h-6 w-6" />
+                        <ClipboardDocumentListIcon className="h-6 w-6" />
                       </Link>
                     </div>
                   </td>

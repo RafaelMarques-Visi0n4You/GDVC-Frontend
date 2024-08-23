@@ -191,7 +191,14 @@ export default function UpdateContaModal({
           onPointerEnterCapture={undefined}
           onPointerLeaveCapture={undefined}
         >
-          Editar Conta
+          Editar Conta -{"  "}
+          <span>
+            {dados?.contaUtilizadores.map((conta) => {
+              if (conta.conta_utilizador_id === id) {
+                return conta.funcionario.nome_completo;
+              }
+            })}
+          </span>
         </Typography>
 
         <form className="py-10 sm:w-94" onSubmit={handleSubmit}>
@@ -222,59 +229,11 @@ export default function UpdateContaModal({
                 <Option value="nivel2">Nível 2</Option>
                 <Option value="nivel3">Nível 3</Option>
                 <Option value="nivel4">Nível 4</Option>
+                <Option value="nivel5">Nível 5</Option>
               </Select>
             </div>
           </div>
           <br />
-          <div className="flex flex-row gap-10">
-            <div className="w-1/2">
-              <Select
-                onChange={(value) => setcliente_id(Number(value))}
-                placeholder={undefined}
-                onPointerEnterCapture={undefined}
-                onPointerLeaveCapture={undefined}
-                label="Cliente"
-              >
-                {clientes?.clientes
-                  .filter(
-                    (cliente) =>
-                      !dados?.contaUtilizadores?.some(
-                        (conta) => conta.cliente_id === cliente.cliente_id
-                      )
-                  )
-                  ?.map((cliente) => (
-                    <Option value={String(cliente?.cliente_id)}>
-                      {cliente?.nome_completo}
-                    </Option>
-                  ))}
-              </Select>
-            </div>
-            <div className="w-1/2">
-              <Select
-                onChange={(value) => setfuncionario_id(Number(value))}
-                placeholder={undefined}
-                onPointerEnterCapture={undefined}
-                onPointerLeaveCapture={undefined}
-                label="Funcionário"
-              >
-                {funcionarios?.funcionarios
-                  ?.filter(
-                    (funcionario) =>
-                      !dados?.contaUtilizadores?.some(
-                        (conta) =>
-                          conta.funcionario_id === funcionario.funcionario_id
-                      )
-                  )
-                  ?.map((funcionario) => (
-                    <Option value={String(funcionario?.funcionario_id)}>
-                      {funcionario?.nome_completo}
-                    </Option>
-                  ))}
-              </Select>
-            </div>
-          </div>
-          <br />
-
           <div className="flex flex-row justify-center gap-10">
             <Button
               className="w-92"

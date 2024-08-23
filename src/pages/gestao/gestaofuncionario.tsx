@@ -8,7 +8,7 @@ import {
   LockClosedIcon,
   PencilSquareIcon,
   PlusIcon,
-  UserGroupIcon,
+  UserIcon,
 } from "@heroicons/react/24/outline";
 import {
   Button,
@@ -100,7 +100,7 @@ interface Conta {
   }[];
 }
 
-const TABLE_HEAD = ["Número mecanográfico", "Nome", "Ativo", "Conta", "Ações"];
+const TABLE_HEAD = ["Número mecanográfico", "Nome", "Conta", "Ativo", "Ações"];
 
 export default function DefaultTable() {
   const [serviceData, setServiceData] = useState<Data | null>(null);
@@ -223,7 +223,10 @@ export default function DefaultTable() {
   }
 
   useEffect(() => {
-    if (data?.user?.tipo_utilizador !== "nivel4") {
+    if (
+      data?.user?.tipo_utilizador !== "nivel4" &&
+      data?.user?.tipo_utilizador !== "nivel5"
+    ) {
       router.push("/permissiondenied");
     }
     loadData();
@@ -303,7 +306,7 @@ export default function DefaultTable() {
   }
 
   return (
-    <main className="overflow-hidden">
+    <main className="overflow-y-hidden">
       {isLoading && (
         <div
           className="absolute inset-0 flex justify-center items-center bg-white bg-opacity-75"
@@ -361,14 +364,14 @@ export default function DefaultTable() {
         </div>
       </div>
       <br />
-      <Card className="h-full w-full overflow-scroll">
+      <Card className="h-full w-full overflow-y-hidden">
         <table className="w-full min-w-max table-auto text-left">
           <thead>
             <tr>
               {TABLE_HEAD.map((head, index) => (
                 <th
                   key={index}
-                  className="border-b- px-32 py-4 "
+                  className="border-b-2 px-12 py-4 "
                   style={{ backgroundColor: "#E0DFDF" }}
                 >
                   <Typography
@@ -386,30 +389,14 @@ export default function DefaultTable() {
             {filterData(serviceData?.funcionarios || [])?.map(
               (funcionario, index) => (
                 <tr key={index}>
-                  <td className="px-32 py-4 border-b border-blue-gray-50">
+                  <td className=" py-4 px-12 border-b border-blue-gray-50">
                     {funcionario.numero_mecanografico}
                   </td>
-                  <td className="px-32 py-4 border-b border-blue-gray-50">
+                  <td className=" py-4 px-12 border-b border-blue-gray-50">
                     {funcionario.nome_completo}
                   </td>
 
-                  <td className="px-32 py-4 border-b border-blue-gray-50">
-                    <ToggleButton
-                      initialState={funcionario.ativo}
-                      onChange={(isChecked: boolean) =>
-                        toggleUserSelection(
-                          funcionario.funcionario_id,
-                          isChecked
-                        )
-                      }
-                    />
-                  </td>
-                  <td
-                    className="py-4 border-b border-blue-gray-50"
-                    style={{
-                      paddingLeft: "115px",
-                    }}
-                  >
+                  <td className="py-4 px-10 border-b border-blue-gray-50">
                     {servicesData?.contasFuncionarios
                       ? servicesData?.contasFuncionarios.map((conta, index) => {
                           if (
@@ -432,13 +419,22 @@ export default function DefaultTable() {
                         })
                       : null}
                   </td>
-                  <td
-                    className="px-6 py-4 border-b border-blue-gray-50"
-                    style={{
-                      paddingLeft: "100px",
-                    }}
-                  >
-                    <div className="font-medium flex items-center gap-2">
+                  <td className=" py-4 px-10 border-b border-blue-gray-50">
+                    <ToggleButton
+                      initialState={funcionario.ativo}
+                      onChange={(isChecked: boolean) =>
+                        toggleUserSelection(
+                          funcionario.funcionario_id,
+                          isChecked
+                        )
+                      }
+                    />
+                  </td>
+                  <td className=" py-4 px-12 border-b border-blue-gray-50">
+                    <div
+                      className="font-medium flex items-center gap-2"
+                      style={{ paddingRight: "100px" }}
+                    >
                       <Link
                         href={{
                           query: {
@@ -468,7 +464,7 @@ export default function DefaultTable() {
                         }}
                         onClick={() => setShowModalDetails(!showModalDetails)}
                       >
-                        <UserGroupIcon className="h-6 w-6" />
+                        <UserIcon className="h-6 w-6" />
                       </Link>
                       <Link
                         href={{

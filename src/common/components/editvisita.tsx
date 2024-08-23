@@ -84,7 +84,10 @@ export default function EditVisitaModal({
     if (token) {
       api.defaults.headers["Authorization"] = `Bearer ${token}`;
       try {
-        if (data.user.tipo_utilizador === "nivel4") {
+        if (
+          data.user.tipo_utilizador === "nivel4" ||
+          data.user.tipo_utilizador === "nivel5"
+        ) {
           const response = await api.post("/visita/getByEmpresa", {
             empresa_id: data.user?.funcionario?.empresa_id,
           });

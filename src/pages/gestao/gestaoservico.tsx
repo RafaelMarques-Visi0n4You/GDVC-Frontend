@@ -84,7 +84,10 @@ export default function DefaultTable() {
   const data = useContext(AuthContext);
 
   useEffect(() => {
-    if (data?.user?.tipo_utilizador !== "nivel4") {
+    if (
+      data?.user?.tipo_utilizador !== "nivel4" &&
+      data?.user?.tipo_utilizador !== "nivel5"
+    ) {
       router.push("/permissiondenied");
     }
     loadData();
@@ -231,7 +234,7 @@ export default function DefaultTable() {
             <Option value="DataCriacao">Data Criação</Option>
           </Select>
         </div>
-        <div className="lg:col-span-2  xl:col-span-2 w-1/4 ">
+        <div className="lg:col-span-1 xl:col-span-2 w-1/4 ">
           <Input
             label="Procurar"
             type="text"
@@ -240,16 +243,16 @@ export default function DefaultTable() {
             icon={<i className="fas fa-heart" />}
           />
         </div>
-        <div className="flex xl:ml-251 lg:ml-48">
+        <div className="flex xl:ml-251 lg:ml-136">
           <Link
             href={"#"}
             onClick={() =>
               setShowModalCreateServiceTipe(!showModalCreateServiceTipe)
             }
           >
-            <Button className="grid grid-flow-col w-48" variant="outlined">
+            <Button className="grid grid-flow-col w-60" variant="outlined">
               <PlusIcon className="h-5 w-5" />
-              <span className="mt-1">Criar Tipo Serviço</span>
+              <span className="mt-1">Criar Categoria Serviço</span>
             </Button>
           </Link>
           <CriarTipoServicoModal
@@ -257,12 +260,12 @@ export default function DefaultTable() {
             setOpen={setShowModalCreateServiceTipe}
           />
         </div>
-        <div className=" lg:ml-44 xl:ml-250">
+        <div className=" lg:ml-36 xl:ml-250">
           <Link
             href={"#"}
             onClick={() => setShowModalCreateService(!showModalCreateService)}
           >
-            <Button className="grid grid-flow-col" variant="outlined">
+            <Button className="grid grid-flow-col w-32" variant="outlined">
               <PlusIcon className="h-5 w-5" />
               <span className="mt-1">Serviço</span>
             </Button>
@@ -272,7 +275,7 @@ export default function DefaultTable() {
             setOpen={setShowModalCreateService}
           />
         </div>
-        <div className="xl:ml-32 lg:ml-20">
+        <div className="xl:ml-32 lg:ml-80">
           <Link href={"#"} onClick={() => setShowModal(!showModal)}>
             <Button className="grid grid-flow-col w-56" variant="outlined">
               <PlusIcon className="h-5 w-5" />
@@ -283,7 +286,7 @@ export default function DefaultTable() {
         </div>
       </div>
       <br />
-      <Card className="h-full w-full overflow-y-scroll">
+      <Card className="h-full w-full overflow-x-scrol">
         <table className="w-full min-w-max table-auto text-left">
           <thead>
             <tr>

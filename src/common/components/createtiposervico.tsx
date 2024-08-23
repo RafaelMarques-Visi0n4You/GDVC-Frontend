@@ -102,27 +102,30 @@ export default function CriarTipoServicoModal({
       api.defaults.headers["Authorization"] = `Bearer ${token}`;
       try {
         const userConfirmed = window.confirm(
-          "Tem a certeza que deseja eliminar este tipo de serviço?"
+          "Tem a certeza que deseja eliminar esta categoria de serviço?"
         );
         if (userConfirmed) {
           const response = await api.delete("/tiposervico/delete/" + id);
           console.log(response.data);
           if (response.data.status === "Success") {
             await loadData();
-            toast.success("Tipo de serviço eliminado com sucesso!");
+            toast.success("Categoria de serviço eliminado com sucesso!");
           } else {
-            console.error("Erro ao eliminar a tipo de serviço:", response.data);
+            console.error(
+              "Erro ao eliminar a categoria de serviço:",
+              response.data
+            );
             toast.error(
-              "Tipo de serviço não pode ser eliminado pois tem serviços associados a ele."
+              "Categoria de serviço não pode ser eliminado pois tem serviços associados a ele."
             );
           }
         } else {
-          console.log("Eliminação do tipo de serviço cancelada.");
+          console.log("Eliminação da categoria de serviço cancelada.");
         }
       } catch (error) {
-        console.error("Erro ao eliminar a tipo de serviço:", error);
+        console.error("Erro ao eliminar a categoria de serviço:", error);
         toast.error(
-          "Tipo de serviço não pode ser eliminado pois tem serviços associados a ele."
+          "Categoria de serviço não pode ser eliminado pois tem serviços associados a ele."
         );
       }
     }
@@ -152,7 +155,7 @@ export default function CriarTipoServicoModal({
       <main className="overflow-hidden">
         <div className="grid grid-cols-2">
           <Typography className="p-6" variant="h5">
-            Tipo serviço
+            Categoria serviço
           </Typography>
           <Link
             href="#"
@@ -242,7 +245,7 @@ export default function CriarTipoServicoModal({
         <br />
 
         <Typography variant="h6" color="blue-gray" className="mb-2 p-7">
-          Criar Tipo de Serviço
+          Criar Categoria de Serviço
           <form
             onSubmit={(e) => {
               e.preventDefault(); // Impede o envio do formulário
@@ -255,7 +258,7 @@ export default function CriarTipoServicoModal({
           >
             <div className="mt-1">
               <Input
-                label="Nome tipo de serviço"
+                label="Nome categoria de serviço"
                 value={text}
                 onChange={(e) => setText(e.target.value)}
               />
@@ -292,7 +295,7 @@ export default function CriarTipoServicoModal({
                     addTipoServico();
                   } else {
                     console.error(
-                      "O campo do nome de tiposervico está vazio. Por favor, insira uma nome."
+                      "O campo do nome de categoria de serviço está vazio. Por favor, insira uma nome."
                     );
                   }
                 }}

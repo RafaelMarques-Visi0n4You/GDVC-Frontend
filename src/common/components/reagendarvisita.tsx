@@ -1,20 +1,24 @@
 import styled from "@emotion/styled";
+
+import { getCookie } from "cookies-next";
+
+import React, {
+  Dispatch,
+  SetStateAction,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
+import toast, { Toaster } from "react-hot-toast";
+
 import {
   Button,
   Dialog,
   Input,
   Option,
   Select,
-  Textarea,
   Typography,
 } from "@material-tailwind/react";
-
-import { getCookie } from "cookies-next";
-
-import React, { useContext, useEffect, useState } from "react";
-import toast, { Toaster } from "react-hot-toast";
-
-import router from "next/router";
 import api from "../services/api";
 import { AuthContext } from "./AuthContext";
 
@@ -23,6 +27,7 @@ export const StyleWrapper = styled.div`
     z-index: 9999 !important;
   }
 `;
+
 interface Data {
   Status: string;
   clientes: {
@@ -56,20 +61,20 @@ interface Data {
   }[];
 }
 
-export default function LongDialog({
+export default function ReagendarVisitaModal({
   open,
   setOpen,
-  datacalendario,
+  idvisita,
+  idagenda,
+  setUpdateKey,
 }: {
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  datacalendario: String;
+  idvisita: number;
+  idagenda: number;
+  setUpdateKey: Dispatch<SetStateAction<number>>;
 }) {
   const data = useContext(AuthContext);
-
-  const [clienteselected, setClienteselected] = useState<number | null>(null);
-  const [clientes, setClientes] = useState<Data | null>(null);
-  const [contratos, setContratos] = useState<Data | null>(null);
   const [equipas, setEquipas] = useState<Data | null>(null);
   const [equipasAgenda, setEquipasAgenda] = useState<{
     Status: string;
@@ -81,19 +86,17 @@ export default function LongDialog({
     }[];
   }>({ Status: "", agendaServicos: [] });
   const [myequipa, setMyEquipa] = useState<Data | null>(null);
-
   const [formData, setFormData] = React.useState({
     equipa_id: 0,
     data_visita_inicio: "",
     hora_visita_inicio: "",
     hora_visita_fim: "",
-    contrato_id: 0,
-    nota: "",
-    tarefas: "",
-    tempo_estimado: 0,
-    tipo_tempo_estimado: "",
     data_visita_fim: "",
   });
+
+  const handleClose = () => {
+    setOpen(false); // Fecha o diálogo quando chamado
+  };
 
   const formatTime = (timeString: string) => {
     return timeString.padStart(5, "0") + ":00";
@@ -109,49 +112,6 @@ export default function LongDialog({
 
   const horainicio = formData.hora_visita_inicio.padStart(5, "0");
   const horafim = formData.hora_visita_fim.padStart(5, "0");
-  const dataFormatada = datacalendario.toString().split("T")[0];
-
-  useEffect(() => {
-    console.log("Data:", data);
-    loadClientes();
-    console.log("Data:", dataFormatada);
-    loadContratos(clienteselected || 0);
-    loadEquipas();
-    checkEquipasAgenda();
-  }, [open, formData, dataFormatada]);
-
-  async function loadClientes() {
-    const token = getCookie("token");
-    if (token) {
-      api.defaults.headers["Authorization"] = `Bearer ${token}`;
-      try {
-        const response = await api.post("/cliente/getMyClients", {
-          id: data.user.funcionario.empresa_id,
-        });
-        setClientes(response.data);
-        console.log("Clientes:", response.data);
-      } catch (error) {
-        console.error("Erro ao carregar equipes:", error);
-      }
-    }
-  }
-
-  async function loadContratos(cliente_id: number) {
-    const token = getCookie("token");
-    if (token) {
-      api.defaults.headers["Authorization"] = `Bearer ${token}`;
-      try {
-        const response = await api.post("/contrato/getClientContract", {
-          id: cliente_id,
-        });
-
-        setContratos(response.data);
-        console.log("Contratos:", contratos);
-      } catch (error) {
-        console.error("Erro ao carregar contratos:", error);
-      }
-    }
-  }
 
   async function loadEquipas() {
     const token = getCookie("token");
@@ -162,21 +122,6 @@ export default function LongDialog({
           id: data.user.funcionario.empresa_id,
         });
         setEquipas(response.data);
-        console.log("Equipas:", response.data);
-      } catch (error) {
-        console.error("Erro ao carregar equipes:", error);
-      }
-    }
-  }
-
-  async function loadmyequipa() {
-    const token = getCookie("token");
-    if (token) {
-      api.defaults.headers["Authorization"] = `Bearer ${token}`;
-      try {
-        const id = data.user.funcionario.equipa_id;
-        const response = await api.post("/equipa/get/" + id);
-        setMyEquipa(response.data);
         console.log("Equipas:", response.data);
       } catch (error) {
         console.error("Erro ao carregar equipes:", error);
@@ -263,19 +208,10 @@ export default function LongDialog({
     if (token) {
       api.defaults.headers["Authorization"] = `Bearer ${token}`;
       try {
-        if (formData.contrato_id === 0) {
-          toast.error("Selecione um contrato");
-          return;
-        }
-
         if (formData.hora_visita_inicio >= formData.hora_visita_fim) {
           toast.error(
             "Hora de início não pode ser maior ou igual que a hora de fim"
           );
-        }
-
-        if (!clienteselected) {
-          toast.error("Selecione um cliente");
         }
 
         if (
@@ -294,7 +230,6 @@ export default function LongDialog({
         console.log("Data Atual:", dataAtual);
         console.log("Data Início:", formattedStart);
         console.log("Data Fim:", formattedEnd);
-        console.log("Data Atual:", dataFormatada);
 
         if (formattedStart > formattedEnd) {
           toast.error("Data de início não pode ser maior que a data de fim");
@@ -351,39 +286,20 @@ export default function LongDialog({
           return;
         }
 
-        const response = await api.post("/agendaservico/create", {
-          equipa_id:
-            data.user.tipo_utilizador === "nivel1" ||
-            data.user.tipo_utilizador === "nivel2"
-              ? data.user.funcionario.equipa_id
-              : formData.equipa_id,
-
-          empresa_id: data.user.funcionario.empresa_id,
-          criado_por_id: data.user.conta_utilizador_id,
-          data_visita: formattedStart,
-          hora_visita_inicio: horainicio,
-          hora_visita_fim: horafim,
-          contrato_id: formData.contrato_id,
-          nota: formData.nota,
-          departamento_id: data.user.funcionario.departamento_id,
-          tempo_estimado: formData.tempo_estimado,
-          tipo_tempo_estimado: formData.tipo_tempo_estimado,
-          data_visita_fim: formattedEnd,
-          ativo:
-            data.user.tipo_utilizador === "nivel4" ||
-            data.user.tipo_utilizador === "nivel3" ||
-            data.user.tipo_utilizador === "nivel5"
-              ? 1
-              : 0,
-          estado_servico:
-            data.user.tipo_utilizador === "nivel4" ||
-            data.user.tipo_utilizador === "nivel3" ||
-            data.user.tipo_utilizador === "nivel5"
-              ? "agendada"
-              : "pendente",
+        const response = await api.put("/agendaservico/update/" + idagenda, {
+          equipa_id: formData.equipa_id,
         });
 
-        console.log("Resposta da criação da visita:", response.data);
+        console.log("Agenda Serviço Atualizadaaaa:", response.data);
+
+        const response2 = await api.put("/visita/update/" + idvisita, {
+          data_visita: formData.data_visita_inicio,
+          data_visita_fim: formData.data_visita_fim,
+          hora_visita_inicio: formData.hora_visita_inicio,
+          hora_visita_fim: formData.hora_visita_fim,
+        });
+
+        console.log("Visita Atualizadaaaa:", response2.data);
 
         // Verifique se a equipe foi criada com sucesso
 
@@ -395,102 +311,17 @@ export default function LongDialog({
           data_visita_inicio: "",
           hora_visita_inicio: "",
           hora_visita_fim: "",
-          contrato_id: 0,
-          nota: "",
-          tarefas: "",
-          tempo_estimado: 0,
-          tipo_tempo_estimado: "",
           data_visita_fim: "",
         });
 
-        if (response.status === 200) {
-          setClienteselected(null);
-          toast.success("Visita agendada com sucesso");
-          handleClose();
-          router.reload();
-        }
+        toast.success("Visita reagendada com sucesso");
+        setUpdateKey((prev) => prev + 1);
+        handleClose();
       } catch (error) {
         console.error("Erro ao enviar dados:", error);
       }
     }
   };
-
-  const handleClose = () => {
-    setOpen(false); // Fecha o diálogo quando chamado
-  };
-
-  const checkEquipaDisponibilidade2 = (
-    hora_visita_inicio: string,
-    hora_visita_fim: string,
-    data_visita: string,
-    equipaId: number,
-    data_visita_fim: string,
-    equipasagenda: { Status?: string; agendaServicos: any }
-  ) => {
-    if (!equipasagenda || !equipasagenda.agendaServicos) {
-      return true; // Se não houver agenda de serviços, a equipe está disponível
-    }
-
-    const datainicio =
-      data_visita < data_visita_fim ? data_visita : data_visita_fim;
-    const datafim =
-      data_visita < data_visita_fim ? data_visita_fim : data_visita;
-
-    const datainicioformatada = formatDate(datainicio);
-    const datafimformatada = formatDate(datafim);
-
-    const horainicio =
-      hora_visita_inicio < hora_visita_fim
-        ? hora_visita_inicio
-        : hora_visita_fim;
-    const horafim =
-      hora_visita_inicio < hora_visita_fim
-        ? hora_visita_fim
-        : hora_visita_inicio;
-
-    const horaInicioFormatada = formatTime(horainicio);
-    const horaFimFormatada = formatTime(horafim);
-
-    const equipeDisponivel = !equipasagenda.agendaServicos.some(
-      (agenda: {
-        data_visita: string;
-        hora_visita_inicio: string;
-        hora_visita_fim: string;
-        equipa_id: number;
-      }) => {
-        const dataVisitaAgenda = formatDate(agenda.data_visita);
-        const horaInicioVisita = formatTime(agenda.hora_visita_inicio);
-        const horaFimVisita = formatTime(agenda.hora_visita_fim);
-
-        if (
-          agenda.equipa_id === equipaId &&
-          dataVisitaAgenda >= datainicioformatada &&
-          dataVisitaAgenda <= datafimformatada
-        ) {
-          return (
-            (horaInicioFormatada >= horaInicioVisita &&
-              horaInicioFormatada < horaFimVisita) ||
-            (horaFimFormatada > horaInicioVisita &&
-              horaFimFormatada <= horaFimVisita) ||
-            (horaInicioFormatada <= horaInicioVisita &&
-              horaFimFormatada >= horaFimVisita)
-          );
-        }
-        return false;
-      }
-    );
-
-    return equipeDisponivel;
-  };
-
-  const equipaunica = checkEquipaDisponibilidade2(
-    formData.hora_visita_inicio,
-    formData.hora_visita_fim,
-    formData.data_visita_inicio,
-    data?.user?.funcionario?.equipa_id,
-    formData.data_visita_fim,
-    equipasAgenda
-  );
 
   const equipaocupada = checkEquipaDisponibilidade(
     formData.hora_visita_inicio,
@@ -503,12 +334,15 @@ export default function LongDialog({
 
   const userLevel = data?.user?.tipo_utilizador;
 
-  const isEquipaUnica = userLevel === "nivel1" || userLevel === "nivel2";
   const isEquipaOcupada =
     userLevel === "nivel3" || userLevel === "nivel4" || userLevel === "nivel5";
 
-  console.log("Equipa Unica:", isEquipaUnica);
-  console.log("Equipa Ocupada:", isEquipaOcupada);
+  useEffect(() => {
+    console.log("Data:", data);
+
+    loadEquipas();
+    checkEquipasAgenda();
+  }, [open, formData]);
 
   return (
     <>
@@ -521,60 +355,10 @@ export default function LongDialog({
           onPointerEnterCapture={undefined}
           onPointerLeaveCapture={undefined}
         >
-          Agendar Visita
+          Reagendar Visita
         </Typography>
 
-        <div className=" px-10 mt-10 w-full">
-          <Select
-            label="Cliente"
-            value={String(clienteselected)}
-            onChange={(value) => {
-              setClienteselected(Number(value));
-              loadContratos(Number(value));
-            }}
-            className="w-full"
-          >
-            {clientes?.clientes
-              ?.filter((cliente) => cliente?.ativo === 1)
-              ?.map((cliente) => (
-                <Option
-                  key={cliente?.cliente_id}
-                  value={String(cliente?.cliente_id)}
-                >
-                  {cliente?.nome_completo}
-                </Option>
-              ))}
-          </Select>
-        </div>
-
         <form onSubmit={handleSubmit} className="py-7 px-10 sm:w-94 ">
-          <div className="w-full">
-            <Select
-              label="Contrato"
-              onChange={(value) => {
-                setFormData((prevData) => ({
-                  ...prevData,
-                  contrato_id: parseInt(value as string),
-                }));
-              }}
-              placeholder={undefined}
-              onPointerEnterCapture={undefined}
-              onPointerLeaveCapture={undefined}
-            >
-              {contratos?.contrato
-                ?.filter((contrato) => contrato?.ativo === 1)
-                ?.map((contrato) => (
-                  <Option
-                    key={contrato?.contrato_id}
-                    value={String(contrato?.contrato_id)}
-                  >
-                    {contrato?.nome}
-                  </Option>
-                ))}
-            </Select>
-          </div>
-          <br />
-
           <div className="flex flex-col col-span-12 gap-7 sm:flex-row sm:gap-9">
             <div className="w-1/2">
               <Input
@@ -637,91 +421,43 @@ export default function LongDialog({
 
           <br />
           <div className="w-full">
-            {data.user?.tipo_utilizador === "nivel4" ||
-            data.user?.tipo_utilizador === "nivel5" ||
-            data.user?.tipo_utilizador === "nivel3" ? (
-              <Select
-                label="Equipa"
-                value={String(formData.equipa_id)}
-                onChange={(value) => {
-                  setFormData((prevData) => ({
-                    ...prevData,
-                    equipa_id: parseInt(value as string),
-                  }));
-                }}
-                className="w-full"
-              >
-                {/* Mapeia e renderiza apenas as equipes disponíveis */}
-                {equipas?.equipas
-                  ?.filter((equipa) => equipa?.ativo === 1)
-                  ?.map((equipa) => {
-                    const disponibilidade = checkEquipaDisponibilidade(
-                      formData.hora_visita_inicio,
-                      formData.hora_visita_fim,
-                      formData.data_visita_inicio,
-                      equipa.equipa_id,
-                      formData.data_visita_fim,
-                      equipasAgenda
-                    );
+            <Select
+              label="Equipa"
+              value={String(formData.equipa_id)}
+              onChange={(value) => {
+                setFormData((prevData) => ({
+                  ...prevData,
+                  equipa_id: parseInt(value as string),
+                }));
+              }}
+              className="w-full"
+            >
+              {/* Mapeia e renderiza apenas as equipes disponíveis */}
+              {equipas?.equipas
+                ?.filter((equipa) => equipa?.ativo === 1)
+                ?.map((equipa) => {
+                  const disponibilidade = checkEquipaDisponibilidade(
+                    formData.hora_visita_inicio,
+                    formData.hora_visita_fim,
+                    formData.data_visita_inicio,
+                    equipa.equipa_id,
+                    formData.data_visita_fim,
+                    equipasAgenda
+                  );
 
-                    return (
-                      <Option
-                        key={equipa?.equipa_id}
-                        value={String(equipa?.equipa_id)}
-                        disabled={disponibilidade ? false : true}
-                      >
-                        {equipa?.nome} -{" "}
-                        {disponibilidade ? "Disponível" : "Ocupada"}
-                      </Option>
-                    );
-                  })}
-              </Select>
-            ) : (
-              <Select
-                label="Equipa"
-                disabled
-                className="w-full"
-                value={String(data?.user?.funcionario?.equipa_id)}
-                onChange={(value) => {
-                  setFormData((prevData) => ({
-                    ...prevData,
-                    equipa_id: data?.user?.funcionario?.equipa_id,
-                  }));
-                }}
-              >
-                {!equipaunica &&
-                formData?.hora_visita_inicio &&
-                formData?.hora_visita_fim ? (
-                  <Option
-                    value={String(data?.user?.funcionario?.equipa_id)}
-                    style={{ color: "red" }}
-                  >
-                    Equipa ocupada neste horário!
-                  </Option>
-                ) : (
-                  <Option value={String(data?.user?.funcionario?.equipa_id)}>
-                    {data.user?.funcionario?.equipa?.nome}
-                  </Option>
-                )}
-              </Select>
-            )}
+                  return (
+                    <Option
+                      key={equipa?.equipa_id}
+                      value={String(equipa?.equipa_id)}
+                      disabled={disponibilidade ? false : true}
+                    >
+                      {equipa?.nome} -{" "}
+                      {disponibilidade ? "Disponível" : "Ocupada"}
+                    </Option>
+                  );
+                })}
+            </Select>
           </div>
-
-          <br />
-          <div className="flex flex-row ml-1"></div>
-          <div className="flex flex-row ">
-            <Textarea
-              label="Notas adicionais"
-              style={{ minHeight: "100px" }}
-              value={formData.nota}
-              onChange={(event) =>
-                setFormData({ ...formData, nota: event.target.value })
-              }
-              onPointerEnterCapture={undefined}
-              onPointerLeaveCapture={undefined}
-            />
-          </div>
-          <br />
 
           <div className="mt-4 sm:flex sm:justify-center flex justify-center gap-10">
             <Button
@@ -734,19 +470,7 @@ export default function LongDialog({
             >
               Cancelar
             </Button>
-            {isEquipaUnica ? (
-              <Button
-                type="submit"
-                style={{
-                  color: "white",
-                  backgroundColor: "#0F124C",
-                }}
-                className="sm:w-1/3  md:mt-0"
-                disabled={!equipaunica}
-              >
-                Agendar
-              </Button>
-            ) : isEquipaOcupada ? (
+            {isEquipaOcupada ? (
               <Button
                 type="submit"
                 style={{

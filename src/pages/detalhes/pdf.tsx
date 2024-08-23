@@ -25,6 +25,7 @@ interface Data {
     }[];
     tarefas: {
       tarefa: string;
+      estado: string;
     }[];
     endereco: {
       morada: string;
@@ -34,20 +35,39 @@ interface Data {
       contacto: string;
       email: string;
     };
+    notas: {
+      nota: string;
+    }[];
+    anomalias: {
+      anomalia: string;
+    }[];
   };
+  notaVisita: {
+    nota: string;
+  }[];
+  anomaliaVisita: {
+    anomalia: string;
+    anomalia_visita_id: number;
+    estado: string;
+    fotografia: string;
+  }[];
 }
 
 export default function Home() {
   const router = useRouter();
-  const id = router.query.id;
+  const { id, idVisita } = router.query;
+  const [notas, setNotas] = useState<Data | null>(null);
   const [serviceData, setServiceData] = useState<Data | null>(null);
   const [tarefas, setTarefas] = useState<
     { tarefa: string }[] | undefined | null
   >(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [data, setData] = useState<Data | null>(null);
 
   useEffect(() => {
     loadData();
+    loadData2();
+    loadData3();
   }, []);
 
   async function loadData() {
@@ -64,6 +84,47 @@ export default function Home() {
           setServiceData(servicesData);
           setIsLoading(false);
         }
+      } catch (error) {
+        console.error("Erro ao carregar dados:", error);
+      }
+    }
+  }
+
+  async function loadData2() {
+    const token = getCookie("token");
+    if (token) {
+      api.defaults.headers["Authorization"] = `Bearer ${token}`;
+      try {
+        const response = await api.post("/notavisita/get", {
+          id: idVisita,
+        });
+        const servicesData = response.data;
+        console.log("servicessssData", response.data);
+        setNotas(servicesData);
+      } catch (error) {
+        console.error("Erro ao carregar dados:", error);
+      }
+    }
+  }
+
+  async function loadData3() {
+    const token = getCookie("token");
+    if (token) {
+      api.defaults.headers["Authorization"] = `Bearer ${token}`;
+      try {
+        const response = await api.post("/anomaliavisita/get", {
+          id: idVisita,
+        });
+        if (!response.data) {
+          console.error("Erro ao carregar dados:", response);
+          return;
+        }
+        const servicesData = response.data;
+
+        setData(servicesData);
+        console.log("dataanomalia: ", data);
+
+        console.log("data", data);
       } catch (error) {
         console.error("Erro ao carregar dados:", error);
       }
@@ -190,15 +251,62 @@ export default function Home() {
             </div>
           </section>
           <br></br>
-          <section className="bg-white p-4 rounded shadow-md  w-210">
+          <section className="bg-white p-4 rounded shadow-md">
             <div className="grid col-span-1 ml-7">
-              <Typography variant="h5" className="mt-4">
-                Tarefas
+              <Typography variant="h5" className="mt-2">
+                Tarefas Realizadas
               </Typography>
-              <ul>
-                {serviceData?.agendaServico?.tarefas.map((tarefa, index) => (
-                  <li key={index} className="mb-2">
-                    <Typography>{tarefa.tarefa}</Typography>
+              <ul className="mt-2">
+                {serviceData?.agendaServico?.tarefas
+                  .filter((tarefa) => tarefa.estado === "concluido")
+                  .map((tarefa, index) => (
+                    <li key={index} className="mb-4">
+                      <Typography>{tarefa.tarefa}</Typography>
+                    </li>
+                  ))}
+              </ul>
+            </div>
+          </section>
+          <section className="bg-white p-4 rounded shadow-md">
+            <div className="grid col-span-1 ml-7">
+              <Typography variant="h5" className="mt-2">
+                Tarefas não Realizadas
+              </Typography>
+              <ul className="mt-2">
+                {serviceData?.agendaServico?.tarefas
+                  .filter((tarefa) => tarefa.estado === "em andamento")
+                  .map((tarefa, index) => (
+                    <li key={index} className="mb-4">
+                      <Typography>{tarefa.tarefa}</Typography>
+                    </li>
+                  ))}
+              </ul>
+            </div>
+          </section>
+          <section className="bg-white p-4 rounded shadow-md w-210">
+            <div className="grid col-span-1 ml-7">
+              <Typography variant="h5" className="mt-2">
+                Notas
+              </Typography>
+              <ul className="mt-2">
+                {notas?.notaVisita?.map((nota, index) => (
+                  <li key={index} className="mb-4">
+                    <Typography>{nota.nota}</Typography>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </section>
+          <br></br>
+          <section className="bg-white p-4 rounded shadow-md w-210">
+            <div className="grid col-span-1 ml-7">
+              <Typography variant="h5" className="mt-2">
+                Anomalias
+              </Typography>
+              <ul className="mt-2">
+                {data?.anomaliaVisita?.map((anomalia, index) => (
+                  <li key={index} className="mb-4">
+                    <Typography>{anomalia.anomalia}</Typography>
                   </li>
                 ))}
               </ul>

@@ -13,6 +13,8 @@ function Login() {
     password: "",
   });
 
+  const [isLoading, setIsLoading] = useState(true);
+
   const { Login } = useAuth();
 
   const handleInput = (event: any) => {

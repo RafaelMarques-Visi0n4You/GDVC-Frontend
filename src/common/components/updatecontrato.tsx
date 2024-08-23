@@ -44,16 +44,23 @@ interface Data {
     nome_completo: string;
     ativo: number;
   }[];
+  servicos: {
+    servico_id: number;
+    nome: string;
+    ativo: number;
+  }[];
 }
 
 export default function UpdateContratoModal({
   open,
   setOpen,
   setUpdateKey,
+  cliente_id,
 }: {
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
   setUpdateKey: Dispatch<SetStateAction<number>>;
+  cliente_id: number;
 }) {
   const [nome, setNome] = useState("");
   const [descricao, setDescricao] = useState("");
@@ -65,6 +72,9 @@ export default function UpdateContratoModal({
   const [localidade_servico, setLocalidadeServico] = useState("");
   const [morada_servico, setMoradaServico] = useState("");
   const [tipo_contrato, setTipoContrato] = useState("");
+  const [servico_id, setServicoId] = useState<number | null>(null);
+  const [prioridade, setPrioridade] = useState("");
+  const [servicos, setServicos] = useState<Data | null>(null);
 
   const [refresh, setRefresh] = useState(false);
   const id = router.query.id;
@@ -85,6 +95,12 @@ export default function UpdateContratoModal({
         const response = await api.get("/cliente/get");
         console.log("Dagdsgds:", response.data);
         setApiCliente(response.data);
+
+        const response2 = await api.post("/servico/getServicosEmpresa", {
+          empresa_id: data?.user?.funcionario?.empresa_id,
+        });
+        console.log("adfhadfh:", response2.data);
+        setServicos(response2.data);
       } catch (error) {
         console.error("Erro ao carregar dados:", error);
       }
@@ -92,13 +108,14 @@ export default function UpdateContratoModal({
   };
 
   useEffect(() => {
+    console.log("Cliente:", cliente_id);
     const token = getCookie("token");
     if (token) {
       api.defaults.headers["Authorization"] = `Bearer ${token}`;
       try {
         api
           .post("/contrato/get", {
-            id: id,
+            id: cliente_id,
           })
           .then((response) => {
             console.log("Resposta:", response.data.contrato?.nome);
@@ -111,6 +128,8 @@ export default function UpdateContratoModal({
             setLocalidadeServico(response.data.contrato?.localidade_servico);
             setMoradaServico(response.data.contrato?.morada_servico);
             setTipoContrato(response.data.contrato?.tipo_contrato);
+            setServicoId(response.data.contrato?.servico_id);
+            setPrioridade(response.data.contrato?.prioridade);
           })
           .catch((error) => {
             // Trate o erro adequadamente, por exemplo, exibindo uma mensagem de erro
@@ -121,7 +140,7 @@ export default function UpdateContratoModal({
         console.error("Erro ao tentar obter dados do cliente:", error);
       }
     }
-  }, [id]);
+  }, [cliente_id]);
 
   useEffect(() => {
     loadData();
@@ -133,7 +152,7 @@ export default function UpdateContratoModal({
     if (token) {
       api.defaults.headers["Authorization"] = `Bearer ${token}`;
       try {
-        const response = await api.put(`/contrato/update/${id}`, {
+        const response = await api.put(`/contrato/update/${cliente_id}`, {
           nome: nome,
           descricao: descricao,
           cliente_id: cliente,
@@ -143,6 +162,8 @@ export default function UpdateContratoModal({
           localidade_servico: localidade_servico,
           morada_servico: morada_servico,
           tipo_contrato: tipo_contrato,
+          servico_id: servico_id,
+          prioridade: prioridade,
         });
         console.log("Resposta:", response.data);
         setUpdateKey((prev) => prev + 1);
@@ -172,7 +193,7 @@ export default function UpdateContratoModal({
             <div className="w-1/2">
               <Input
                 type="text"
-                label="Nome"
+                label="Identificação do Contrato"
                 onPointerEnterCapture={undefined}
                 onPointerLeaveCapture={undefined}
                 value={nome}
@@ -246,6 +267,41 @@ export default function UpdateContratoModal({
           <br />
           <div className="flex flex-row gap-10">
             <div className="w-1/2">
+              <Select
+                label="Prioritário"
+                onPointerEnterCapture={undefined}
+                onPointerLeaveCapture={undefined}
+                value={String(prioridade)}
+                onChange={(value) => {
+                  setPrioridade(String(value));
+                }}
+              >
+                <Option value="Sim">Sim</Option>
+                <Option value="Nao">Não</Option>
+              </Select>
+            </div>
+            <div className="w-1/2">
+              <Select
+                label="Serviço"
+                value={String(servico_id)}
+                onChange={(value) => {
+                  setServicoId(Number(value));
+                }}
+              >
+                {servicos?.servicos?.map((servico) => (
+                  <Option
+                    key={servico?.servico_id}
+                    value={String(servico?.servico_id)}
+                  >
+                    {servico?.nome}
+                  </Option>
+                ))}
+              </Select>
+            </div>
+          </div>
+          <br />
+          <div className="flex flex-row gap-10">
+            <div className="w-1/2">
               <Input
                 type="date"
                 label="Data de Início"
@@ -269,28 +325,7 @@ export default function UpdateContratoModal({
             </div>
           </div>
           <br />
-          <div className="flex flex-row gap-10">
-            <div className="w-full">
-              <Select
-                label="Cliente"
-                onChange={(value) => setCliente(Number(value))}
-                placeholder={undefined}
-                onPointerEnterCapture={undefined}
-                onPointerLeaveCapture={undefined}
-                value={cliente?.toString()}
-              >
-                {apiCliente?.clientes
-                  ?.filter((cliente) => cliente?.ativo === 1)
-                  ?.map((cliente) => (
-                    <Option value={String(cliente?.cliente_id)}>
-                      {cliente?.nome_completo}
-                    </Option>
-                  ))}
-              </Select>
-            </div>
-          </div>
 
-          <br />
           <div className="w-full">
             <Textarea
               label="Descrição"

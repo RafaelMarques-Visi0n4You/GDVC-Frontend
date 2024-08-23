@@ -51,7 +51,7 @@ interface Data {
   }[];
 }
 
-const TABLE_HEAD = ["Equipa", "Tipo Serviço", "Ações"];
+const TABLE_HEAD = ["Equipa", "Categoria Serviço", "Ações"];
 
 export default function AssociarModal({
   open,
@@ -126,7 +126,7 @@ export default function AssociarModal({
           equipa_id: 0,
         });
         loadData();
-        toast.success("Tipo de serviço criado com sucesso!");
+        toast.success("Categoria de serviço criado com sucesso!");
       } catch (error) {
         console.error("Erro ao carregar dados:", error);
       }
@@ -149,21 +149,21 @@ export default function AssociarModal({
           if (response.data.Status === "Success") {
             await loadData();
             toast.success(
-              "Tipo de serviço associado à equipa eliminado com sucesso!"
+              "Categoria de serviço associado à equipa eliminado com sucesso!"
             );
           } else {
             toast.error(
-              "Tipo de serviço associado à equipa não pode ser eliminado."
+              "Categoria de serviço associado à equipa não pode ser eliminado."
             );
           }
         } else {
           console.log(
-            "Eliminação do tipo de serviço associado à equipa cancelada."
+            "Eliminação da categoria de serviço associado à equipa cancelada."
           );
         }
       } catch (error) {
         toast.error(
-          "Tipo de serviço associado à equipa não pode ser eliminado."
+          "Categoria de serviço associado à equipa não pode ser eliminado."
         );
       }
     }
@@ -176,11 +176,11 @@ export default function AssociarModal({
 
       switch (filterType) {
         case "TipoServico":
-          const nome = tipoServicosHasEquipa.tipo_servico.nome;
-          return nome.toLowerCase().includes(searchTerm);
+          const nome = tipoServicosHasEquipa?.tipo_servico?.nome;
+          return nome?.toLowerCase().includes(searchTerm);
         case "Equipa":
-          const nome2 = tipoServicosHasEquipa.equipa.nome;
-          return nome2.toLowerCase().includes(searchTerm);
+          const nome2 = tipoServicosHasEquipa?.equipa?.nome;
+          return nome2?.toLowerCase().includes(searchTerm);
         default:
           return false;
       }
@@ -192,7 +192,7 @@ export default function AssociarModal({
       <main className="overflow-hidden">
         <div className="grid grid-cols-2">
           <Typography className="p-6" variant="h5">
-            Associar tipo serviço a equipa
+            Associar categoria serviço a equipa
           </Typography>
           <Link
             href="#"
@@ -213,7 +213,7 @@ export default function AssociarModal({
               defaultValue={"Equipa"}
               onChange={(value) => setFilterType(String(value))}
             >
-              <Option value="TipoServico">Tipo Serviço</Option>
+              <Option value="TipoServico">Categoria Serviço</Option>
               <Option value="Equipa">Equipa</Option>
             </Select>
           </div>
@@ -288,7 +288,7 @@ export default function AssociarModal({
         <br />
 
         <Typography variant="h6" color="blue-gray" className="mb-2 p-7">
-          Adicionar tipo de serviço à equipa
+          Adicionar categoria de serviço à equipa
           <form
             onSubmit={(e) => {
               e.preventDefault(); // Impede o envio do formulário
@@ -320,7 +320,7 @@ export default function AssociarModal({
             <br />
             <div className="mt-1">
               <Select
-                label="Tipo de serviço"
+                label="Categoria de serviço"
                 value={String(formData?.tipo_servico_id)}
                 onChange={(value) => {
                   setFormData({

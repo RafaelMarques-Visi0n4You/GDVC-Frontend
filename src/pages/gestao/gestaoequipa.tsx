@@ -3,14 +3,13 @@ import AddFuncionarioEquipaModal from "@/common/components/addfuncionarioequipa"
 import CriarChefeEquipaModal from "@/common/components/createchefeequipa";
 import CriarDepartamentoModal from "@/common/components/createdepartamento";
 import CriarEquipaModal from "@/common/components/criarequipa";
-import DetalheEquipaModal from "@/common/components/detalheequipa";
 import UpdateEquipaModal from "@/common/components/updateequipa";
 import api from "@/common/services/api";
 import {
   ClipboardDocumentListIcon,
   PencilSquareIcon,
   PlusIcon,
-  UserGroupIcon,
+  UserPlusIcon,
 } from "@heroicons/react/24/outline";
 import {
   Button,
@@ -55,14 +54,7 @@ interface Data {
   }[];
 }
 
-const TABLE_HEAD = [
-  "Nome",
-  "Data Criação",
-  "Departamento",
-  "Chefe Equipa",
-  "Ativo",
-  "Ações",
-];
+const TABLE_HEAD = ["Nome", "Departamento", "Chefe Equipa", "Ativo", "Ações"];
 
 export default function DefaultTable() {
   const [ativo, setAtivo] = useState<Data | null>(null);
@@ -109,7 +101,10 @@ export default function DefaultTable() {
   }
 
   useEffect(() => {
-    if (data?.user?.tipo_utilizador !== "nivel4") {
+    if (
+      data?.user?.tipo_utilizador !== "nivel4" &&
+      data?.user?.tipo_utilizador !== "nivel5"
+    ) {
       router.push("/permissiondenied");
     }
     console.log(updateKey);
@@ -297,14 +292,14 @@ export default function DefaultTable() {
         </div>
       </div>
       <br />
-      <Card className="h-full w-full overflow-y-scroll">
+      <Card className="h-full w-full overflow-y-hidden">
         <table className="w-full min-w-max table-auto text-left">
           <thead>
             <tr>
               {TABLE_HEAD.map((head, index) => (
                 <th
                   key={index}
-                  className="border-b- px-24 py-4 "
+                  className="border-b- px-10  py-4 "
                   style={{ backgroundColor: "#E0DFDF" }}
                 >
                   <Typography
@@ -321,13 +316,20 @@ export default function DefaultTable() {
           <tbody>
             {filterData(serviceData?.equipas || [])?.map((equipa, index) => (
               <tr key={index}>
-                <td className="px-24 py-4 border-b border-blue-gray-50">
-                  {equipa.nome}
+                <td className="px-10 py-4 border-b border-blue-gray-50">
+                  <Link
+                    href={{
+                      query: {
+                        id: serviceData?.equipas?.[index]?.equipa_id,
+                      },
+                      pathname: "/detalhes/detalheequipa",
+                    }}
+                  >
+                    {equipa.nome}
+                  </Link>
                 </td>
-                <td className="px-24 py-4 border-b border-blue-gray-50">
-                  {equipa.data_criacao.split("T")[0]}
-                </td>
-                <td className="px-24 py-4 border-b border-blue-gray-50">
+
+                <td className="px-10  py-4 border-b border-blue-gray-50">
                   {departamentos?.departamentos
                     .filter(
                       (departamento: { departamento_id: number }) =>
@@ -337,7 +339,7 @@ export default function DefaultTable() {
                       <span key={index2}>{departamento.nome}</span>
                     ))}
                 </td>
-                <td className="px-24 py-4 border-b border-blue-gray-50">
+                <td className="px-10  py-4 border-b border-blue-gray-50">
                   {chefeEquipa && (
                     <Link
                       href={{
@@ -372,7 +374,7 @@ export default function DefaultTable() {
                     </Link>
                   )}
                 </td>
-                <td className="px-24 py-4 border-b border-blue-gray-50">
+                <td className="px-8 py-4 border-b border-blue-gray-50">
                   <ToggleButton
                     initialState={equipa.ativo}
                     onChange={(isChecked: boolean) => {
@@ -380,7 +382,7 @@ export default function DefaultTable() {
                     }}
                   />
                 </td>
-                <td className="px-18 py-4 border-b border-blue-gray-50">
+                <td className="px-6 py-4 border-b border-blue-gray-50">
                   <div className="font-medium flex items-center gap-2">
                     <Link
                       href={{
@@ -405,21 +407,14 @@ export default function DefaultTable() {
                           setShowModalAddFuncionario(!showModalAddFuncionario);
                       }}
                     >
-                      <UserGroupIcon className="h-6 w-6" />
+                      <UserPlusIcon className="h-6 w-6" />
                     </Link>
                     <Link
                       href={{
                         query: {
                           id: serviceData?.equipas?.[index]?.equipa_id,
                         },
-                      }}
-                      onClick={() => {
-                        {
-                          setDetalhesId(
-                            serviceData?.equipas?.[index]?.equipa_id ?? 0
-                          );
-                          setShowModalDetails(!showModalDetails);
-                        }
+                        pathname: "/detalhes/detalheequipa",
                       }}
                     >
                       <ClipboardDocumentListIcon className="h-6 w-6" />
@@ -443,11 +438,6 @@ export default function DefaultTable() {
               open={showModalUpdate}
               setOpen={setShowModalUpdate}
               setUpdateKey={setUpdateKey}
-            />
-            <DetalheEquipaModal
-              open={showModalDetails}
-              setOpen={setShowModalDetails}
-              id={detalhesId}
             />
           </tbody>
         </table>

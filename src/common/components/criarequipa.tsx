@@ -73,6 +73,25 @@ export default function CriarEquipaModal({
     loadData();
   }, []);
 
+  useEffect(() => {
+    const savedColor = localStorage.getItem("cor_equipa");
+    if (savedColor) {
+      setFormData((prevFormData) => ({
+        ...prevFormData,
+        cor_equipa: savedColor,
+      }));
+    }
+  }, []);
+
+  const handleColorChange = (event: any) => {
+    const selectedColor = event;
+    setFormData((prevFormData) => ({
+      ...prevFormData,
+      cor_equipa: selectedColor,
+    }));
+    localStorage.setItem("cor_equipa", selectedColor);
+  };
+
   const handleSubmit = async (event: any) => {
     event.preventDefault();
 
@@ -80,9 +99,6 @@ export default function CriarEquipaModal({
     if (token) {
       api.defaults.headers["Authorization"] = `Bearer ${token}`;
       try {
-        // Verifique se todos os campos do formulário estão preenchidos
-
-        // Verifique individualmente para cada campo e mostre mensagens de erro apropriadas
         if (formData.nome.trim() === "") {
           toast.error("Campo 'nome' é obrigatório.");
           return;
@@ -96,7 +112,6 @@ export default function CriarEquipaModal({
           return;
         }
 
-        // Crie a equipe
         const response = await api.post("/equipa/create", {
           nome: formData.nome,
           departamento_id: formData.departamento_id,
@@ -107,13 +122,10 @@ export default function CriarEquipaModal({
 
         console.log("Resposta da criação da equipe:", response.data);
 
-        // Verifique se a equipe foi criada com sucesso
         if (response.data.id) {
-          // Extraia o ID da equipe criada da resposta da API
           const equipeId = response.data.id;
           console.log("ID da equipe criada:", equipeId);
 
-          // Limpe os campos do formulário se necessário
           setFormData({
             nome: "",
             departamento_id: 0,
@@ -124,7 +136,7 @@ export default function CriarEquipaModal({
           toast.success("Equipa criada com sucesso!");
         } else {
           console.log("Erro ao criar a equipa");
-          toast.error("Algo deu errado. Por favor, tente novamente.");
+          toast.error("Cor já escolhida para uma equipa. Escolha outra cor.");
         }
       } catch (error) {
         console.error("Erro ao enviar dados:", error);
@@ -133,7 +145,7 @@ export default function CriarEquipaModal({
   };
 
   const handleClose = () => {
-    setOpen(false); // Fecha o diálogo quando chamado
+    setOpen(false);
   };
 
   return (

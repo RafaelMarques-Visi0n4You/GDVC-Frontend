@@ -52,9 +52,11 @@ interface Data {
 export default function DetalheContratoModal({
   open,
   setOpen,
+  contrato_id,
 }: {
   open: boolean;
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  contrato_id: number;
 }) {
   const router = useRouter();
   const id = router.query.id;
@@ -69,14 +71,14 @@ export default function DetalheContratoModal({
 
   useEffect(() => {
     loadData();
-  }, [id]);
+  }, [id, contrato_id]);
 
   async function loadData() {
     const token = getCookie("token");
     if (token) {
       api.defaults.headers["Authorization"] = `Bearer ${token}`;
       try {
-        const response = await api.post("/contrato/get/", { id: id });
+        const response = await api.post("/contrato/get/", { id: contrato_id });
         if (!response.data) {
           console.error("Erro ao carregar dados:", response);
           return;
@@ -135,31 +137,7 @@ export default function DetalheContratoModal({
               </p>
             </CardBody>
           </Card>
-          <Card className="mt-5 w-90 mr-4 xl:max-h-60">
-            <CardBody>
-              <Typography variant="h6">Dados criação do contrato</Typography>
-              <p className="mt-2 text-gray-600">
-                Criado por:{" "}
-                <span className="text-black">
-                  {contautilizador?.contaUtilizadores
-                    ?.filter(
-                      (conta) =>
-                        conta.conta_utilizador_id ===
-                        data?.contrato?.criado_por_id
-                    )
-                    .map((conta) => conta.funcionario.nome_completo)}
-                </span>
-              </p>
-              <p className="mt-2 text-gray-600">
-                Data criação:
-                <span className="text-black">
-                  {" "}
-                  {data?.contrato?.data_criacao.slice(0, 10)}
-                </span>
-              </p>
-            </CardBody>
-          </Card>
-          <Card className=" ml-4 lg:max-h-60 overflow-y-scroll">
+          <Card className="mt-5 w-90 mr-4 xl:min-h-60 xl:max-h-60">
             <CardBody>
               <Typography variant="h6">Dados do serviço</Typography>
               <p className="mt-2 text-gray-600">
@@ -177,32 +155,31 @@ export default function DetalheContratoModal({
               </p>
             </CardBody>
           </Card>
-          <Card className="mr-4  xl:max-h-60 lg:max-h-60">
-            <CardBody>
-              <Typography variant="h6">Dados do cliente</Typography>
-              <p className="mt-2 text-gray-600">
-                Nome Cliente:{" "}
-                <span className="text-black">
-                  {data?.contrato?.cliente?.nome_completo}
-                </span>
-              </p>
-              <p className="mt-2 text-gray-600">
-                Contacto:
-                <span className="text-black">
-                  {" "}
-                  {data?.contrato?.cliente?.contacto}
-                </span>
-              </p>
-              <p className="mt-2 text-gray-600">
-                Email:
-                <span className="text-black">
-                  {" "}
-                  {data?.contrato?.cliente?.email}
-                </span>
-              </p>
-            </CardBody>
-          </Card>
         </div>
+        <Card className="mt-5 w-90 mr-4 ml-4 xl:max-h-60">
+          <CardBody>
+            <Typography variant="h6">Dados criação do contrato</Typography>
+            <p className="mt-2 text-gray-600">
+              Criado por:{" "}
+              <span className="text-black">
+                {contautilizador?.contaUtilizadores
+                  ?.filter(
+                    (conta) =>
+                      conta.conta_utilizador_id ===
+                      data?.contrato?.criado_por_id
+                  )
+                  .map((conta) => conta.funcionario.nome_completo)}
+              </span>
+            </p>
+            <p className="mt-2 text-gray-600">
+              Data criação:
+              <span className="text-black">
+                {" "}
+                {data?.contrato?.data_criacao.slice(0, 10)}
+              </span>
+            </p>
+          </CardBody>
+        </Card>
 
         <div className="flex justify-center mt-4">
           <Button

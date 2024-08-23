@@ -246,6 +246,7 @@ export default function CriarContaModal({
                   <Option value="nivel2">Nível 2</Option>
                   <Option value="nivel3">Nível 3</Option>
                   <Option value="nivel4">Nível 4</Option>
+                  <Option value="nivel5">Nível 5</Option>
                 </Select>
               )}
             </div>

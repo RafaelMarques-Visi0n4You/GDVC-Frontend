@@ -91,7 +91,10 @@ export default function DefaultTable() {
   const [detalhesId, setDetalhesId] = useState(0);
 
   useEffect(() => {
-    if (data?.user?.tipo_utilizador !== "nivel4") {
+    if (
+      data?.user?.tipo_utilizador !== "nivel4" &&
+      data?.user?.tipo_utilizador !== "nivel5"
+    ) {
       router.push("/permissiondenied");
     }
     loadData();
@@ -288,7 +291,7 @@ export default function DefaultTable() {
         </div>
       </div>
       <br />
-      <Card className="h-full w-full overflow-scroll">
+      <Card className="h-full w-full overflow-y-auto">
         <table className="w-full min-w-max table-auto text-left">
           <thead>
             <tr>

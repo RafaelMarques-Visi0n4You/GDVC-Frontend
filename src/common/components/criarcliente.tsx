@@ -1,5 +1,6 @@
 import { Button, Dialog, Input, Typography } from "@material-tailwind/react";
 import { getCookie } from "cookies-next";
+import router from "next/router";
 import { useContext, useEffect, useState } from "react";
 import toast, { Toaster } from "react-hot-toast";
 import api from "../services/api";
@@ -31,6 +32,32 @@ interface Data {
   };
 }
 
+interface Data2 {
+  Status: string;
+  cliente: {
+    cliente_id: number;
+    nome_completo: string;
+    nif: string;
+    email: string;
+    ativo: boolean;
+    contacto: string;
+    morada: string;
+    localidade: string;
+    cod_postal: string;
+    empresa_id: number;
+  };
+  empresas: {
+    empresa_id: number;
+    nome: string;
+  }[];
+  user: {
+    tipo_utilizador: string;
+    funcionario: {
+      empresa_id: number;
+    };
+  };
+}
+
 export default function CriarClienteModal({
   open,
   setOpen,
@@ -39,6 +66,7 @@ export default function CriarClienteModal({
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
   const [data, setData] = useState<Data | null>(null);
+  const [cliendId, setClientId] = useState<Data2 | null>(null);
 
   async function loadData() {
     const token = getCookie("token");
@@ -111,17 +139,23 @@ export default function CriarClienteModal({
           empresa_id: utilizador.user.funcionario.empresa_id,
         });
 
-        setFormData({
-          nome_completo: "",
-          email: "",
-          nif: "",
-          contacto: "",
-          morada: "",
-          localidade: "",
-          cod_postal: "",
-        });
+        if (response.status === 200) {
+          const clienteId = response.data?.cliente?.cliente_id;
+          setClientId(clienteId);
+          console.log("clienteid", clienteId);
 
-        setOpen(false);
+          setFormData({
+            nome_completo: "",
+            email: "",
+            nif: "",
+            contacto: "",
+            morada: "",
+            localidade: "",
+            cod_postal: "",
+          });
+
+          router.push(`/detalhes/detalhecliente?id=${clienteId}`);
+        }
       } catch (error) {
         console.error("Erro ao enviar dados:", error);
       }

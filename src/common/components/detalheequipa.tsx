@@ -59,6 +59,13 @@ interface Data {
       empresa_id: number;
     };
   }[];
+  tipoServicosHasEquipas: {
+    tipo_servico_id: number;
+    equipa_id: number;
+    tipo_servico: {
+      nome: string;
+    };
+  }[];
 }
 
 export default function DetalheEquipaModal({
@@ -82,6 +89,8 @@ export default function DetalheEquipaModal({
   const [todoschefe, setTodosChefe] = useState<Data | null>(null);
   const user = useContext(AuthContext);
   const [isLoading, setIsLoading] = useState(true);
+  const [tiposervicohasequipas, setTipoServicoHasEquipa] =
+    useState<Data | null>(null);
 
   const handleClose = () => {
     setOpen(false); // Fecha o diálogo quando chamado
@@ -142,6 +151,16 @@ export default function DetalheEquipaModal({
         const chefeequipa = await api.get("/chefeequipa/get/");
         console.log("Chefe Equipa:", chefeequipa);
         setTodosChefe(chefeequipa.data);
+
+        const tiposervicos = await api.post(
+          "/tiposervicohasequipas/getByEquipas/",
+          {
+            equipa_id: servicesData.equipa.equipa_id,
+          }
+        );
+
+        setTipoServicoHasEquipa(tiposervicos.data);
+        console.log("Tipo Serviço:", tiposervicohasequipas);
       } catch (error) {
         console.error("Erro ao carregar dados:", error);
       }
@@ -232,26 +251,52 @@ export default function DetalheEquipaModal({
           </div>
         </div>
         <br />
-        <Card className="mr-4 ml-4">
-          <CardBody>
-            <Typography variant="h6">Elementos equipa</Typography>
-            <div className="max-h-40 overflow-y-scroll">
-              {funcionario?.funcionarios?.map((funcionarios) => (
-                <div className="bg-gray-200 rounded-md w-96">
-                  <div
-                    className="mt-2 m-2 text-gray-700"
-                    key={funcionarios.funcionario_id}
-                  >
-                    {funcionarios.nome_completo}
+        <div className="grid grid-cols-2 gap-5">
+          <Card className="mr-4 ml-4">
+            <CardBody>
+              <Typography variant="h6">Elementos equipa</Typography>
+              <div className="max-h-40 overflow-y-scroll">
+                {funcionario?.funcionarios?.map((funcionarios) => (
+                  <div className=" rounded-md w-96">
+                    <div
+                      className="mt-2 m-2 text-gray-700"
+                      key={funcionarios.funcionario_id}
+                    >
+                      {funcionarios.nome_completo}
+                    </div>
+                    <hr></hr>
                   </div>
+                ))}
+                <div className="bg-gray-200 rounded-md">
+                  <div className="mt2 "></div>
                 </div>
-              ))}
-              <div className="bg-gray-200 rounded-md">
-                <div className="mt2 "></div>
               </div>
-            </div>
-          </CardBody>
-        </Card>
+            </CardBody>
+          </Card>
+          <Card className="mr-4 ml-4">
+            <CardBody>
+              <Typography variant="h6">Serviço da Equipa</Typography>
+              <div className="max-h-40 overflow-y-scroll">
+                {tiposervicohasequipas?.tipoServicosHasEquipas?.map(
+                  (tiposervico) => (
+                    <div className=" rounded-md w-96">
+                      <div
+                        className="mt-2 m-2 text-gray-700"
+                        key={tiposervico.tipo_servico_id}
+                      >
+                        {tiposervico.tipo_servico.nome}
+                      </div>
+                      <hr></hr>
+                    </div>
+                  )
+                )}
+                <div className="bg-gray-200 rounded-md">
+                  <div className="mt2 "></div>
+                </div>
+              </div>
+            </CardBody>
+          </Card>
+        </div>
         <div className="flex justify-center mt-4">
           <Button
             onClick={() => {

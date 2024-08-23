@@ -78,7 +78,10 @@ export default function DefaultTable() {
   const data = useContext(AuthContext);
 
   useEffect(() => {
-    if (data?.user?.tipo_utilizador !== "nivel4") {
+    if (
+      data?.user?.tipo_utilizador !== "nivel4" &&
+      data?.user?.tipo_utilizador !== "nivel5"
+    ) {
       router.push("/permissiondenied");
     }
     loadData();
@@ -240,9 +243,12 @@ export default function DefaultTable() {
               setShowModalCreate((showModalCreate) => !showModalCreate)
             }
           >
-            <Button className="grid grid-flow-col" variant="outlined">
+            <Button
+              className="grid grid-flow-col flex-1 items-center gap-1"
+              variant="outlined"
+            >
               <PlusIcon className="h-5 w-5" />
-              <span className="mt-1">Conta</span>
+              <span>Conta</span>
             </Button>
           </Link>
           <CriarContaModal
@@ -252,7 +258,7 @@ export default function DefaultTable() {
         </div>
       </div>
       <br />
-      <Card className="h-full w-full overflow-y-scroll">
+      <Card className="h-full w-full overflow-y-hidden">
         <table className="w-full min-w-max table-auto text-left">
           <thead>
             <tr>
@@ -260,7 +266,7 @@ export default function DefaultTable() {
                 <th
                   key={index}
                   className="border-b- px-20 py-4 "
-                  style={{ backgroundColor: "#E0DFDF" }}
+                  style={{ backgroundColor: "#E0D4DF" }}
                 >
                   <Typography
                     variant="small"

@@ -1,6 +1,6 @@
 import { AuthContext } from "@/common/components/AuthContext";
 import styled from "@emotion/styled";
-import { EventSourceInput } from "@fullcalendar/core/index.js";
+import { EventContentArg, EventSourceInput } from "@fullcalendar/core/index.js";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import FullCalendar from "@fullcalendar/react";
@@ -11,10 +11,13 @@ import { Fragment, useContext, useEffect, useState } from "react";
 import api from "../../common/services/api";
 
 import LongDialog from "@/common/components/modalform";
+import { PlusIcon } from "@heroicons/react/24/outline";
 import { UsersIcon } from "@heroicons/react/24/solid";
-import { Spinner } from "@material-tailwind/react";
+import { Button, Spinner, Typography } from "@material-tailwind/react";
 import { getCookie } from "cookies-next";
+import Link from "next/link";
 import router from "next/router";
+import React from "react";
 
 const icon = UsersIcon;
 
@@ -31,20 +34,57 @@ interface Event {
   agenda_servico_id: number;
   id_agenda: number;
   cor_equipa: string;
+  estado_servico: string;
 }
+
+export const StyleWrapper2 = styled.div`
+  .fc .fc-daygrid-body-unbalanced .fc-daygrid-day-events {
+    min-height: 0rem !important;
+  }
+  .fc .fc-toolbar-title {
+    font-size: 1rem;
+    margin-left: 67px;
+    margin-top: -30px;
+  }
+
+  .fc button {
+    height: 2rem;
+    width: 2.3rem;
+    margin-top: 15px;
+    padding-right: 0.5rem;
+    margin-right: 11rem;
+  }
+
+  .fc .fc-button .fc-icon {
+    height: 2rem;
+
+    font-size: 1rem;
+  }
+
+  .fc .fc-toolbar-chunk {
+    margin-left: 2rem;
+  }
+  .fc .fc-toolbar {
+    display: grid;
+    grid-template-columns: repeat(1, 1fr);
+  }
+`;
 
 export const StyleWrapper = styled.div`
   .fc td {
     background: white;
+    font-size: 1rem;
   }
   .fc th {
     border: none;
     overflow-y: hidden;
+    font-size: 1rem;
   }
   .fc table {
     border-top: none;
     border-left: none;
-    width: 100%;
+    width: 103%;
+    height: 100%;
   }
   .fc daygrid-day-frame {
     border: none;
@@ -70,10 +110,8 @@ export const StyleWrapper = styled.div`
   }
 
   .fc-toolbar-chunk {
-    width: 100%;
     margin-top: 20px;
     margin-bottom: 10px;
-    margin-left: 60px;
   }
 
   @media screen and (min-width: 1832px) {
@@ -93,6 +131,25 @@ export const StyleWrapper = styled.div`
   .fc-v-event {
     border: none;
     background-color: white;
+  }
+  .fc .fc-toolbar {
+    gap: 195px;
+    width: 103%;
+  }
+  .fc .fc-scroller {
+    overflow-y: hidden !important;
+  }
+
+  .fc .fc-dayGridMonth-view .fc-scroller-liquid-absolute {
+    overflow-y: hidden !important;
+  }
+
+  .fc .fc-scroller-liquid-absolute {
+    overflow-y: scroll !important;
+  }
+
+  .fc .fc-toolbar-title {
+    font-size: 1.2rem;
   }
 `;
 
@@ -114,17 +171,47 @@ export default function Home() {
     agenda_servico_id: 0,
     id_agenda: 0,
     cor_equipa: "",
+    estado_servico: "",
   });
-  const [visita, setVisita] = useState([]);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [visitas, setVisitas] = useState<any[]>([]);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [showModalVisita, setShowModalVisita] = useState(false);
   const [dataVisita, setDataVisita] = useState("");
   const [dataAtual, setDataAtual] = useState(new Date());
   const [isLoading, setIsLoading] = useState(true);
   const [visitascores, setVisitascores] = useState([]);
+  const [equipacor, setEquipaCor] = useState<number | null>(null);
+
+  // get all unique equipas from visitas
+  const equipas = visitas
+    .filter(
+      (visita, index, self) =>
+        self.findIndex(
+          (v) =>
+            v.agenda_servico.equipa.equipa_id ===
+            visita.agenda_servico.equipa.equipa_id
+        ) === index
+    )
+    .map((visita) => visita.agenda_servico.equipa);
+
+  console.log("equipas:", equipas);
 
   const data = useContext(AuthContext);
   console.log(data);
+
+  const calendarRef = React.createRef();
+
+  function updateCalendarDate() {
+    if (calendarRef.current) {
+      const calendarApi = calendarRef.current.getApi();
+      calendarApi.gotoDate(selectedDate);
+    }
+  }
+
+  //change the date of the calendar when the selected date changes
+  useEffect(() => {
+    updateCalendarDate();
+  }, [selectedDate]);
 
   useEffect(() => {
     loadData();
@@ -150,10 +237,14 @@ export default function Home() {
     setShowModalVisita(true);
   }
 
-  function addEvent(events: Event[], corequipa: String) {
+  function addEvent(events: Event[], corequipa: String[]) {
+    const filteredEvents = events.filter((event) =>
+      ["agendada", "terminada", "cancelada"].includes(event.estado_servico)
+    );
+
     const newEventList = [
       ...allEvents,
-      ...events.map((event, index) => ({
+      ...filteredEvents.map((event, index) => ({
         ...event,
 
         start: new Date(event.data_visita + "T" + event.hora_visita_inicio),
@@ -163,8 +254,9 @@ export default function Home() {
         id: event.visita_id,
         agenda_servico_id: event.agenda_servico_id,
         cor_equipa: corequipa[index],
+        estado_servico: event.estado_servico,
       })),
-    ];
+    ] as Event[];
     console.log("newEventList:", newEventList);
     setAllEvents(newEventList);
   }
@@ -204,7 +296,7 @@ export default function Home() {
             equipa_id: data.user.funcionario.equipa_id,
           });
           if (response.status === 200) {
-            setVisita(response.data.visitas);
+            setVisitas(response.data.visitas);
 
             const corequipa = response.data.visitas.map(
               (visita: any) => visita.agenda_servico.equipa.cor_equipa
@@ -216,12 +308,16 @@ export default function Home() {
             setIsLoading(false);
           }
         }
-        if (data.user.tipo_utilizador === "nivel4") {
+        if (
+          data.user.tipo_utilizador === "nivel4" ||
+          data.user.tipo_utilizador === "nivel5"
+        ) {
           const response = await api.post("/visita/getByEmpresa", {
             empresa_id: data.user.funcionario.empresa_id,
           });
           if (response.status === 200) {
-            setVisita(response.data.visitas);
+            setVisitas(response.data.visitas);
+            console.log("visita:", response.data.visitas);
 
             const corequipa = response.data.visitas.map(
               (visita: any) => visita.agenda_servico.equipa.cor_equipa
@@ -239,7 +335,7 @@ export default function Home() {
             departamento_id: data.user.funcionario.departamento_id,
           });
           if (response.status === 200) {
-            setVisita(response.data.visitas);
+            setVisitas(response.data.visitas);
 
             const corequipa = response.data.visitas.map(
               (visita: any) => visita.agenda_servico.equipa.cor_equipa
@@ -272,6 +368,7 @@ export default function Home() {
       agenda_servico_id: 0,
       id_agenda: 0,
       cor_equipa: "",
+      estado_servico: "",
     });
     setShowDeleteModal(false);
     setIdToDelete(null);
@@ -300,6 +397,7 @@ export default function Home() {
       agenda_servico_id: newEvent.agenda_servico_id,
       id_agenda: newEvent.id_agenda,
       cor_equipa: newEvent.cor_equipa,
+      estado_servico: newEvent.estado_servico,
 
       id: new Date().getTime(), // Gerar um ID único para o novo evento
     };
@@ -327,69 +425,80 @@ export default function Home() {
       agenda_servico_id: 0,
       id_agenda: 0,
       cor_equipa: "",
+      estado_servico: "",
     });
   }
 
-  function renderEventContent(eventInfo: any) {
+  function renderEventContent(eventInfo: EventContentArg) {
     console.log("eventInfo:", eventInfo.event);
 
     return (
-      <div
-        className="fc-event-main"
-        style={{
-          backgroundColor:
-            eventInfo.event.extendedProps.estado_servico === "agendada"
-              ? "#4682b4"
-              : eventInfo.event.extendedProps.estado_servico === "em andamento"
-              ? "#b2c1b8"
-              : eventInfo.event.extendedProps.estado_servico === "terminada"
-              ? "#95d7b0"
-              : eventInfo.event.extendedProps.estado_servico === "cancelada"
-              ? "#fa7f72"
-              : "#fa7f72",
-          borderColor:
-            eventInfo.event.extendedProps.estado_servico === "agendada"
-              ? "#4682b4"
-              : eventInfo.event.extendedProps.estado_servico === "em andamento"
-              ? "#b2c1b8"
-              : eventInfo.event.extendedProps.estado_servico === "terminada"
-              ? "#95d7b0"
-              : eventInfo.event.extendedProps.estado_servico === "cancelada"
-              ? "#fa7f72"
-              : "#fa7f72",
-          borderStyle: "solid",
-          borderWidth: "1px",
-          borderRadius: "4px",
-        }}
-      >
+      <>
         <div
-          className="fc-title flex"
+          className="fc-event-main"
           style={{
-            whiteSpace: "normal",
-            textDecoration:
-              eventInfo.event.extendedProps.estado_servico === "cancelada"
-                ? "line-through"
-                : "none",
+            backgroundColor:
+              eventInfo.event?.extendedProps?.estado_servico === "agendada"
+                ? "#4682b4"
+                : eventInfo.event?.extendedProps?.estado_servico ===
+                  "em andamento"
+                ? "#4682b4"
+                : eventInfo.event?.extendedProps?.estado_servico === "terminada"
+                ? "#95d7b0"
+                : eventInfo.event?.extendedProps?.estado_servico ===
+                    "cancelada" ||
+                  eventInfo.event?.extendedProps?.estado_servico ===
+                    "nao aprovada"
+                ? "#fa7f72"
+                : "##b2c1b8",
+            borderColor:
+              eventInfo.event?.extendedProps?.estado_servico === "agendada"
+                ? "#4682b4"
+                : eventInfo.event?.extendedProps?.estado_servico ===
+                  "em andamento"
+                ? "#4682b4"
+                : eventInfo.event?.extendedProps?.estado_servico === "terminada"
+                ? "#95d7b0"
+                : eventInfo.event?.extendedProps?.estado_servico ===
+                    "cancelada" ||
+                  eventInfo.event?.extendedProps?.estado_servico ===
+                    "nao aprovada"
+                ? "#fa7f72"
+                : "#b2c1b8",
+            borderStyle: "solid",
+            borderWidth: "1px",
+            borderRadius: "4px",
           }}
         >
-          {eventInfo.event.extendedProps.hora_visita_inicio.slice(0, 5)} -{" "}
-          {eventInfo.event.extendedProps.hora_visita_fim.slice(0, 5)}
-          <br />
-          {eventInfo.event.title}
-          <br />
-          {eventInfo.event.extendedProps.agenda_servico.equipa.nome}
-          <br />
-          Cliente:{" "}
-          {eventInfo.event.extendedProps.contrato.cliente.nome_completo}
+          <div
+            className="fc-title flex"
+            style={{
+              whiteSpace: "normal",
+              textDecoration:
+                eventInfo.event?.extendedProps?.estado_servico === "cancelada"
+                  ? "line-through"
+                  : "none",
+            }}
+          >
+            {eventInfo.event?.extendedProps?.hora_visita_inicio?.slice(0, 5)} -{" "}
+            {eventInfo.event?.extendedProps?.hora_visita_fim?.slice(0, 5)}
+            <br />
+            {eventInfo?.event?.title}
+            <br />
+            {eventInfo.event?.extendedProps?.agenda_servico?.equipa?.nome}
+            <br />
+            Cliente:{" "}
+            {eventInfo.event?.extendedProps?.contrato?.cliente?.nome_completo}
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   function filterdataatual() {
     const dataAtual = new Date();
 
-    const eventosFiltrados = visita.filter((event) => {
+    const eventosFiltrados = visitas.filter((event) => {
       const eventDate = new Date(event.data_visita); // Supondo que o campo de data do evento seja 'data_visita'
       return (
         eventDate.getDate() === dataAtual.getDate() &&
@@ -413,7 +522,7 @@ export default function Home() {
 
   function filterEventsBySelectedDate() {
     if (selectedDate) {
-      const filteredEvents = visita.filter((event) => {
+      const filteredEvents = visitas.filter((event) => {
         const eventDate = new Date(event.data_visita);
         return (
           eventDate.getDate() === selectedDate.getDate() &&
@@ -441,6 +550,46 @@ export default function Home() {
 
   const eventosDataAtual = filterdataatual();
 
+  function setSelectedEquipaId(equipaId: number) {
+    setEquipaCor(equipaId);
+  }
+
+  function handleEquipaClick(equipaId: number, cor: string) {
+    const events = visitas.filter(
+      (visita) => visita.agenda_servico.equipa.equipa_id === equipaId
+    );
+
+    setAllEvents(
+      events.map((event) => ({
+        ...event,
+        start: new Date(event.data_visita + "T" + event.hora_visita_inicio),
+        end: new Date(event.data_visita + "T" + event.hora_visita_fim),
+        title: event.servicos[0].nome,
+        allDay: false,
+        id: event.visita_id,
+        agenda_servico_id: event.agenda_servico_id,
+        cor_equipa: cor,
+      }))
+    );
+
+    console.log("equipaId:", equipaId);
+  }
+
+  function resetEvents() {
+    setAllEvents(
+      visitas.map((event) => ({
+        ...event,
+        start: new Date(event.data_visita + "T" + event.hora_visita_inicio),
+        end: new Date(event.data_visita + "T" + event.hora_visita_fim),
+        title: event.servicos[0].nome,
+        allDay: false,
+        id: event.visita_id,
+        agenda_servico_id: event.agenda_servico_id,
+        cor_equipa: event.agenda_servico.equipa.cor_equipa,
+      }))
+    );
+  }
+
   return (
     <>
       <main
@@ -455,47 +604,147 @@ export default function Home() {
             <Spinner className="h-16 w-16 text-gray-900/50" />
           </div>
         )}
-        <div className="md:grid md:grid-cols-12 gap-10  lg:h-240 xl:h-280 float-start">
+        <div className="md:grid md:grid-cols-12 gap-2  lg:h-240 xl:h-280 float-start">
           <div className="col-span-12 xl:col-span-3 h-60 lg:col-span-3 lg:h-full  bg-white">
             {/* Div das visitas */}
             <div
               className="flex flex-col rounded-md lg:h-full   "
               style={{ maxHeight: "31.75rem" }}
             >
+              <br></br>
+
               <div className="  mr-5 ml-5 h-151">
+                <Link
+                  href={"#"}
+                  onClick={() => {
+                    setDataVisita(""), setShowModalVisita(true);
+                  }}
+                >
+                  <Button
+                    className=" w-80 grid-flow-col flex items-center gap-1"
+                    variant="outlined"
+                  >
+                    <PlusIcon className="h-5 w-5" />
+                    <Typography className="" variant="h6">
+                      Visita
+                    </Typography>
+                  </Button>
+                </Link>
+                <br></br>
+                <div
+                  className="border-2 rounded-md"
+                  style={{
+                    borderColor: "#1F2A37",
+                  }}
+                >
+                  <StyleWrapper2>
+                    <FullCalendar
+                      plugins={[dayGridPlugin]}
+                      initialView="dayGridMonth"
+                      locale={"pt-br"}
+                      headerToolbar={{
+                        left: "prev,next",
+                        center: "title",
+                        right: "",
+                      }}
+                      navLinkDayClick={handleNavLinkDayClick}
+                      navLinks={true}
+                    />
+                  </StyleWrapper2>
+                </div>
                 <h1 className="font-bold text-lg text-left p-5 mb-2">
-                  Equipas{" "}
+                  Agenda das equipas{" "}
                 </h1>
+
                 <div className="flex-col flex items-center ">
-                  {visitascores.length > 0 ? (
-                    visita
-                      .map(
-                        (visita: any) => visita.agenda_servico.equipa.cor_equipa
-                      )
-                      .filter((cor, index, self) => self.indexOf(cor) === index)
-                      .map((cor: any) => {
-                        return (
+                  {equipas.length > 0 ? (
+                    equipas.map((equipa) => {
+                      return (
+                        <button
+                          onClick={() => {
+                            handleEquipaClick(
+                              equipa.equipa_id,
+                              equipa.cor_equipa
+                            ),
+                              setSelectedEquipaId(equipa.equipa_id);
+                          }}
+                        >
                           <div
-                            key={cor}
-                            className="w-80 mt-1 ml-9 mb-3 sm:ml-0 rounded-lg shadow-md  "
-                            style={{ backgroundColor: cor }}
+                            key={equipa.cor_equipa}
+                            className=" flex w-80 mt-1 ml-9 mb-3 sm:ml-0 rounded-lg shadow-md"
+                            style={{ backgroundColor: "#f2f2f2" }}
                           >
+                            <div
+                              className="border-l-8 h-18 flex rounded-s"
+                              style={{
+                                borderColor:
+                                  equipa.equipa_id === equipacor
+                                    ? equipa.cor_equipa
+                                    : "#f2f2f2",
+                              }}
+                            ></div>
                             <div className="flex p-6">
-                              <div className="space-y-1">
-                                {visita
-                                  .filter(
-                                    (v: any) =>
-                                      v.agenda_servico.equipa.cor_equipa === cor
-                                  )
-                                  .find(
-                                    (v: any) =>
-                                      v?.agenda_servico?.equipa?.cor_equipa ===
-                                      cor
-                                  )?.agenda_servico?.equipa?.nome ||
-                                  "Sem equipa"}
+                              <div className="space-y-1 text-sm">
+                                {equipa.nome}
                               </div>
                             </div>
                           </div>
+                        </button>
+                      );
+                    })
+                  ) : (
+                    <div className="flex justify-center items-center h-60">
+                      <p className="text-gray-500">Sem equipas</p>
+                    </div>
+                  )}
+                  <Button
+                    className="w-80 "
+                    onClick={() => {
+                      resetEvents(), setSelectedEquipaId(0);
+                    }}
+                    style={{
+                      backgroundColor: "#1F2A37",
+                    }}
+                  >
+                    Limpar Filtros
+                  </Button>
+                </div>
+                {/* <div className="flex-col flex items-center ">
+                  {visitascores.length > 0 ? (
+                    visitas
+                      .filter((cor, index, self) => self.indexOf(cor) === index)
+                      .map((visita: any) => {
+                        return (
+                          <button
+                            onClick={() =>
+                              handleEquipaClick(
+                                visita?.agenda_servico?.equipa?.equipa_id
+                              )
+                            }
+                          >
+                            <div
+                              key={visita.agenda_servico.equipa.cor_equipa}
+                              className="w-80 mt-1 ml-9 mb-3 sm:ml-0 rounded-lg shadow-md"
+                              style={{ backgroundColor: cor }}
+                            >
+                              <div className="flex p-6">
+                                <div className="space-y-1">
+                                  {visita
+                                    .filter(
+                                      (v: any) =>
+                                        v.agenda_servico.equipa.cor_equipa ===
+                                        cor
+                                    )
+                                    .find(
+                                      (v: any) =>
+                                        v?.agenda_servico?.equipa
+                                          ?.cor_equipa === cor
+                                    )?.agenda_servico?.equipa?.nome ||
+                                    "Sem equipa"}
+                                </div>
+                              </div>
+                            </div>
+                          </button>
                         );
                       })
                   ) : (
@@ -504,6 +753,7 @@ export default function Home() {
                     </div>
                   )}
                 </div>
+                */}
               </div>
             </div>
 
@@ -515,23 +765,25 @@ export default function Home() {
           </div>
           <div className="lg:col-span-8 lg:w-250 xl:col-span-8 xl:w-335  ">
             {/* Calendário */}
+
             <StyleWrapper className=" text-xs md:text-lg  ">
               <FullCalendar
+                ref={calendarRef}
                 locale={"pt-br"}
                 plugins={[dayGridPlugin, interactionPlugin, timeGridPlugin]}
-                customButtons={{
-                  myCustomButton: {
-                    text: "Agendar Visitas",
-                    click: () => {
-                      setDataVisita(""), setShowModalVisita(true);
-                    },
-                  },
-                }}
-                initialView="dayGridMonth"
+                // customButtons={{
+                //   myCustomButton: {
+                //     text: "Agendar Visitas",
+                //     click: () => {
+                //       setDataVisita(""), setShowModalVisita(true);
+                //     },
+                //   },
+                // }}
+                initialView="timeGridWeek"
                 headerToolbar={{
                   left: "prev,next today",
                   center: "title",
-                  right: "timeGridDay,timeGridWeek,dayGridMonth myCustomButton",
+                  right: "dayGridMonth,timeGridWeek,timeGridDay",
                 }}
                 events={allEvents as EventSourceInput}
                 navLinks={true}
@@ -550,6 +802,8 @@ export default function Home() {
                   hour: "2-digit",
                 }}
                 displayEventTime={true}
+                initialDate={selectedDate}
+                allDaySlot={false}
               />
             </StyleWrapper>
           </div>

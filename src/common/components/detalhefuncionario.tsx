@@ -112,62 +112,62 @@ export default function DetalheFuncionarioModal({
         <Typography variant="h5" className="flex justify-center mt-4">
           Detalhes Funcionário
         </Typography>
-        <div className="grid grid-cols-2 gap-5">
-          <Card className="mt-5 w-90 ml-4 max-h-60 ">
+        <Card className="ml-4 mt-3 mr-4 xl:w-178 lg:w-140">
+          <CardBody>
+            <p className=" text-gray-600">
+              Número Mecanográfico:{" "}
+              <span className="text-black">
+                {data?.funcionario?.numero_mecanografico}{" "}
+              </span>
+            </p>
+            <p className=" mt-4 text-gray-600 ">
+              Nome Funcionário:{" "}
+              <span className="text-black">
+                {data?.funcionario?.nome_completo}
+              </span>
+            </p>
+            <p className="mt-4 text-gray-600">
+              Email:{" "}
+              <span className="text-black">{data?.funcionario?.email}</span>
+            </p>
+
+            <p className="mt-4 text-gray-600">
+              Cargo:{" "}
+              <span className="text-black">{data?.funcionario?.cargo} </span>
+            </p>
+            <p className="mt-4 text-gray-600">
+              Estado:{" "}
+              <span
+                className={`text-black ${
+                  data?.funcionario?.ativo ? "text-green-600" : "text-red-600"
+                }`}
+              >
+                {data?.funcionario?.ativo ? "Ativo" : "Inativo"}
+              </span>
+            </p>
+          </CardBody>
+        </Card>
+
+        <div className="">
+          <Card className="ml-4 mt-3 mr-4 xl:w-178 lg:w-140">
             <CardBody>
-              <p className="text-gray-600 ">
-                Nome Funcionário:{" "}
+              <p className="mt-2 text-gray-600">
+                Contacto:{" "}
                 <span className="text-black">
-                  {data?.funcionario?.nome_completo}
+                  {data?.funcionario?.contacto}
                 </span>
               </p>
-              <p className="mt-4 text-gray-600">
-                Número Mecanográfico:{" "}
+              <p className="mt-2 text-gray-600">
+                Morada Completa:{" "}
                 <span className="text-black">
-                  {data?.funcionario?.numero_mecanografico}{" "}
-                </span>
-              </p>
-              <p className="mt-4 text-gray-600">
-                Cargo:{" "}
-                <span className="text-black">{data?.funcionario?.cargo} </span>
-              </p>
-              <p className="mt-4 text-gray-600">
-                Estado:{" "}
-                <span
-                  className={`text-black ${
-                    data?.funcionario?.ativo ? "text-green-600" : "text-red-600"
-                  }`}
-                >
-                  {data?.funcionario?.ativo ? "Ativo" : "Inativo"}
+                  {data?.funcionario?.morada}, {data?.funcionario?.cod_postal} ,{" "}
+                  {data?.funcionario?.localidade}
                 </span>
               </p>
             </CardBody>
           </Card>
 
-          <div className="">
-            <Card className="mt-5 mr-4">
-              <CardBody>
-                <p className="mt-2 text-gray-600">
-                  Email:{" "}
-                  <span className="text-black">{data?.funcionario?.email}</span>
-                </p>
-                <p className="mt-2 text-gray-600">
-                  Contacto:{" "}
-                  <span className="text-black">
-                    {data?.funcionario?.contacto}
-                  </span>
-                </p>
-                <p className="mt-2 text-gray-600">
-                  Morada Completa:{" "}
-                  <span className="text-black">
-                    {data?.funcionario?.morada}, {data?.funcionario?.cod_postal}{" "}
-                    , {data?.funcionario?.localidade}
-                  </span>
-                </p>
-              </CardBody>
-            </Card>
-          </div>
-          <Card className="ml-4 xl:w-178 lg:w-140">
+          <Card className="ml-4 mt-3 mr-4 xl:w-178 lg:w-140">
             <CardBody>
               <Typography variant="h6">Pertence a:</Typography>
               <p className="mt-2 text-gray-600">
@@ -202,6 +202,7 @@ export default function DetalheFuncionarioModal({
             </CardBody>
           </Card>
         </div>
+
         <div className="flex justify-center mt-4">
           <Button
             onClick={handleClose}

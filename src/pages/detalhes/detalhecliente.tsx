@@ -10,8 +10,21 @@ import { useRouter } from "next/router";
 import { useContext, useEffect, useState } from "react";
 
 import { AuthContext } from "@/common/components/AuthContext";
-import { HomeIcon } from "@heroicons/react/24/outline";
+import CriarContratoModal from "@/common/components/createcontrato";
 import { getCookie } from "cookies-next";
+
+import DetalheContratoModal from "@/common/components/detalhecontrato";
+import UpdateClienteModal from "@/common/components/updatecliente";
+import UpdateContratoModal from "@/common/components/updatecontrato";
+import styled from "@emotion/styled";
+import {
+  ChevronRightIcon,
+  ClipboardDocumentListIcon,
+  PencilSquareIcon,
+  PlusIcon,
+} from "@heroicons/react/24/outline";
+import { Button, Input, Option, Select } from "@material-tailwind/react";
+import Link from "next/link";
 
 interface Data {
   Status: string;
@@ -37,10 +50,24 @@ interface Data {
     hora_visita_fim: string;
     contrato_id: number;
     estado_servico: string;
+    agenda_servico_id: number;
     servicos: {
       nome: string;
       descricao: string;
     }[];
+    agenda_servico: {
+      agenda_servico_id: number;
+      equipa: {
+        equipa_id: number;
+        nome: string;
+      };
+    };
+    contrato: {
+      nome: string;
+      cliente: {
+        cliente_id: number;
+      };
+    };
   }[];
   cliente: {
     nome_completo: string;
@@ -50,8 +77,59 @@ interface Data {
     localidade: string;
     morada: string;
     nif: string;
+    cliente_id: number;
   };
+  contratos: {
+    ativo: boolean;
+    cliente_id: number;
+    cod_postal_servico: string;
+    contrato_id: number;
+    criado_por_id: number;
+    data_criacao: string;
+    data_fim: string;
+    data_inicio: string;
+    descricao: string;
+    localidade_servico: string;
+    morada_servico: string;
+    nome: string;
+    tipo_contrato: string;
+    cliente: {
+      nome_completo: string;
+    };
+  }[];
+  tipoServico: {
+    tipo_servico_id: number;
+    nome: string;
+  }[];
+  contaUtilizadores: {
+    conta_utilizador_id: number;
+    nome: string;
+    funcionario: {
+      nome_completo: string;
+    };
+  }[];
 }
+
+const CardGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(4, minmax(350px, 1fr));
+  gap: -10px;
+  padding: 8px;
+`;
+
+const CardHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+`;
+
+const CardTitle = styled.h3`
+  font-size: 16px;
+  color: #ffffff;
+  margin-top: 23px;
+`;
+
+const TABLE_HEAD = ["Nome", "Ativo", "Ações"];
 
 export default function Home() {
   const router = useRouter();
@@ -61,16 +139,67 @@ export default function Home() {
   const [visitas, setVisitas] = useState<Data | null>(null);
   const [contrato, setContrato] = useState<Data | null>(null);
   const user = useContext(AuthContext);
+  const [serviceData, setServiceData] = useState<Data | null>(null);
+  const [showModalCreateContrato, setShowModalCreateContrato] = useState(false);
+  const [showModalCreateServiceTipe, setShowModalCreateServiceTipe] =
+    useState(false);
+  const [showModalUpdate, setShowModalUpdate] = useState(false);
+  const [showModalUpdate2, setShowModalUpdate2] = useState(false);
+  const [showModalDetalhes, setShowModalDetalhes] = useState(false);
+  const [clientesData, setClientesData] = useState<Data | null>(null); // Fix: Add 'clientesData' to the useState
+  const [updateKey, setUpdateKey] = useState(0);
+  const [refresh, setRefresh] = useState(false);
+  const [estado, setEstado] = useState<string>("");
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
-  useEffect(() => {
-    if (id) {
-      loadData();
+  const [searchText, setSearchText] = useState("");
+  const [filterType, setFilterType] = useState("Nome");
+  const [contratoID, setContratoID] = useState(0);
+  const [selectedContratoID, setSelectedContratoID] = useState<number | null>(
+    null
+  );
+
+  const clienteID = Number(id);
+
+  const visitasFiltradas = visitas?.visitas.filter((visita) => {
+    const abc = visita.contrato.cliente.cliente_id === clienteID;
+
+    const contratoMatches =
+      selectedContratoID === null || visita.contrato_id === selectedContratoID;
+    const estadoMatches = estado === "" || visita.estado_servico === estado;
+    const selectedDates =
+      selectedDate === null || new Date(visita.data_visita) <= selectedDate;
+
+    return contratoMatches && estadoMatches && selectedDates && abc;
+  });
+
+  function filterEventsByDate(visitas: Data["visitas"], date: Date | null) {
+    if (!date) return visitas; // Retorna todas as visitas se a data não estiver definida
+
+    return visitas.filter((event) => {
+      const eventDate = new Date(event.data_visita);
+      return eventDate <= date;
+    });
+  }
+
+  function filterByDate(visitas: Data["visitas"], date: Date | null) {
+    let filteredVisits = visitas;
+    if (date !== null) {
+      filteredVisits = filterEventsByDate(visitas, date);
     }
-  }, [id]);
+    return filteredVisits;
+  }
 
   useEffect(() => {
-    console.log("Data:", data);
-  }, [data]);
+    loadData();
+    loadData2();
+  }, [
+    showModalCreateContrato,
+    showModalCreateServiceTipe,
+    updateKey,
+    clienteID,
+    showModalUpdate,
+  ]);
 
   async function loadData() {
     setIsLoading(true);
@@ -88,7 +217,7 @@ export default function Home() {
         setData(servicesData);
 
         const response3 = await api.post("contrato/getClientContract", {
-          id: id,
+          id: clienteID,
         });
 
         setContrato(response3.data);
@@ -112,6 +241,129 @@ export default function Home() {
     }
   }
 
+  useEffect(() => {
+    if (
+      user?.user?.tipo_utilizador !== "nivel4" &&
+      user?.user?.tipo_utilizador !== "nivel5"
+    ) {
+      router.push("/permissiondenied");
+    }
+    loadData();
+    loadData2();
+  }, [
+    showModalCreateContrato,
+    showModalCreateServiceTipe,
+    updateKey,
+    clienteID,
+  ]);
+
+  function clearfilters() {
+    setSelectedContratoID(null);
+    setSelectedDate(null);
+    setEstado("");
+  }
+
+  async function toggleUserSelection(id: number, isChecked: boolean) {
+    console.log("botao clicado");
+    const token = getCookie("token");
+    if (token) {
+      api.defaults.headers["Authorization"] = `Bearer ${token}`;
+      try {
+        const response = await api.put(`/contrato/setAcesso/${id}`);
+        console.log(response.data);
+        if (response.data.Status === "Success") {
+          setServiceData(response.data);
+          setRefresh(!refresh);
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    }
+  }
+
+  function ToggleButton({ initialState = false, onChange }: any) {
+    const [isChecked, setIsChecked] = useState(initialState);
+
+    const handleClick = () => {
+      setIsChecked(!isChecked);
+      onChange(!isChecked);
+    };
+
+    return (
+      <label className="inline-flex items-center cursor-pointer">
+        <input
+          type="checkbox"
+          className="sr-only"
+          checked={isChecked}
+          onChange={handleClick}
+        />
+        <div
+          className={`relative w-12 h-6 rounded-full ${
+            isChecked ? "bg-green-600" : "bg-red-200"
+          }`}
+        >
+          <div
+            className={`relative w-6 h-6 rounded-full bg-white transition-transform transform ${
+              isChecked ? "translate-x-full" : ""
+            }`}
+          ></div>
+        </div>
+      </label>
+    );
+  }
+
+  const contratosFiltrados = serviceData?.contratos?.filter(
+    (contrato) => contrato?.cliente_id === clienteID
+  );
+  console.log("Contratos Filtrados:", contratosFiltrados);
+
+  function filterData(contratos: any[]) {
+    return contratos.filter((contrato) => {
+      const { nome, tipo_contrato, data_inicio, data_fim, cliente } = contrato;
+      const searchTerm = searchText.toLowerCase();
+
+      switch (filterType) {
+        case "Nome":
+          return nome.toLowerCase().includes(searchTerm);
+        case "Tipo":
+          return tipo_contrato.toLowerCase().includes(searchTerm);
+        case "Duracao":
+          return `${data_inicio}- ${data_fim}`.toString().includes(searchTerm);
+        case "NomeCliente":
+          return contrato.cliente?.nome_completo
+            .toLowerCase()
+            .includes(searchTerm);
+        default:
+          return false;
+      }
+    });
+  }
+
+  async function loadData2() {
+    setIsLoading(true);
+    const token = getCookie("token");
+    if (token) {
+      api.defaults.headers["Authorization"] = `Bearer ${token}`;
+      try {
+        const response = await api.post("/contrato/getClientContract", {
+          id: id,
+        });
+        if (response.status === 200) {
+          console.log(response.data);
+          setServiceData(response.data);
+          console.log("Data12:", serviceData);
+
+          const clientesresponse = await api.get("/cliente/get");
+          console.log(clientesresponse.data);
+          setClientesData(clientesresponse.data);
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -121,7 +373,7 @@ export default function Home() {
   }
 
   return (
-    <main className="overflow-hidden ">
+    <main>
       <div
         className="flex justify-center items-center py-4"
         style={{ backgroundColor: "#F9FAFB" }}
@@ -131,129 +383,24 @@ export default function Home() {
         </Typography>
       </div>
       <div
-        className="grid grid-span-col-12 sm:grid-flow-col w-full sm:gap-7 p-3"
-        style={{ backgroundColor: "#F9FAFB", height: "50.5rem" }}
+        className="grid grid-cols-2 w-full sm:gap-7 gap-4 p-3"
+        style={{ backgroundColor: "#F9FAFB" }}
       >
-        <div>
-          <Card className="mt-6 sm:w-full">
+        <div className="flex-1">
+          <Card className="mt-6 w-full">
             <CardBody>
-              <Typography variant="h5" color="blue-gray" className="mb-2">
-                Contratos
-              </Typography>
-              <div></div>
-
-              <div className="mt-5 grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-                {contrato?.contrato.map((contrato) => (
-                  <div
-                    key={contrato.contrato_id}
-                    className="bg-gray-100 shadow-md rounded-lg p-6"
-                  >
-                    <h2 className="text-xl font-semibold text-black mb-4">
-                      Contrato
-                    </h2>
-                    <div className="mb-2">
-                      <span className="text-black font-semibold">Nome:</span>{" "}
-                      <span className="text-black">{contrato.nome}</span>
-                    </div>
-                    <div className="mb-2">
-                      <span className="font-semibold text-black">
-                        Descrição:
-                      </span>{" "}
-                      <span className="text-black">{contrato.descricao}</span>
-                    </div>
-                    <div className="mb-2">
-                      <span className="font-semibold text-black">
-                        Tipo de contrato:
-                      </span>{" "}
-                      <span className="text-black">
-                        {contrato.tipo_contrato}
-                      </span>
-                    </div>
-                    <div className="mb-2">
-                      <span className="font-semibold text-black">
-                        Data do contrato:
-                      </span>{" "}
-                      <span className="text-black">
-                        {contrato.data_inicio} {" - "} {contrato.data_fim}
-                      </span>
-                    </div>
-                    <div className="mt-4">
-                      <h3 className="text-lg font-semibold text-black">
-                        Visitas:
-                      </h3>
-                      <div className="max-h-32 overflow-y-auto">
-                        {visitas?.visitas
-                          .filter(
-                            (visita) =>
-                              visita.contrato_id === contrato.contrato_id
-                          )
-                          .map((visita) => (
-                            <div
-                              key={visita.visita_id}
-                              className="bg-white shadow-md rounded-lg p-4 mt-2 "
-                            >
-                              <div>
-                                <span className="font-semibold">Nome: </span>
-                                <span>
-                                  {visita?.servicos?.map((servico) => (
-                                    <span key={servico.nome}>
-                                      {servico.nome}
-                                    </span>
-                                  ))}
-                                </span>
-                              </div>
-                              <div>
-                                <span className="font-semibold">Data:</span>{" "}
-                                {visita.data_visita}
-                              </div>
-                              <div>
-                                <span className="font-semibold">
-                                  Hora de Início:
-                                </span>{" "}
-                                {visita.hora_visita_inicio
-                                  .split(":")
-                                  .slice(0, 2)
-                                  .join(":")}{" "}
-                                {" -"}{" "}
-                                {visita.hora_visita_fim
-                                  .split(":")
-                                  .slice(0, 2)
-                                  .join(":")}
-                              </div>
-                              <div></div>
-                              <span className="font-semibold">
-                                Estado:
-                              </span>{" "}
-                              {visita.estado_servico}
-                            </div>
-                          ))}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <br></br>
-              <br></br>
-              <div className="grid grid-cols-7">
-                <div className=" grid grid-flow-col justify-start rounded-xl border-2 w-96">
-                  <HomeIcon className="h-6 w-6 ml-4" />
-                  <div className="ml-4">
-                    {data?.cliente?.morada}, {data?.cliente?.cod_postal}{" "}
-                    {data?.cliente?.localidade}
-                  </div>
-                </div>
-              </div>
-            </CardBody>
-            <CardFooter className="pt-0"></CardFooter>
-          </Card>
-          <br></br>
-        </div>
-        <div>
-          <Card className="mt-6 w-3/5 sm:w-full" style={{ height: "260px" }}>
-            <CardBody>
-              <Typography color="blue-gray" className="mb-2">
+              <Typography color="blue-gray" className="mb-2 flex">
                 Cliente:
+                <Link
+                  href={{
+                    query: {
+                      id: data?.cliente?.cliente_id,
+                    },
+                  }}
+                  onClick={() => setShowModalUpdate2(!showModalUpdate2)}
+                >
+                  <PencilSquareIcon className="h-6 w-6 ml-1" />
+                </Link>
               </Typography>
               <p className="text-gray-600 ">
                 Nome completo:{" "}
@@ -265,7 +412,6 @@ export default function Home() {
                 Email:
                 <span className="text-black"> {data?.cliente?.email}</span>
               </p>
-
               <p className="mt-4 text-gray-600">
                 Contacto:
                 <span className="text-black"> {data?.cliente?.contacto}</span>
@@ -283,13 +429,230 @@ export default function Home() {
                   {data?.cliente?.localidade}
                 </span>
               </p>
-              <br></br>
+              <br />
             </CardBody>
             <CardFooter className="pt-0"></CardFooter>
           </Card>
         </div>
-        <div></div>
+
+        <div className="mt-8">
+          <div className="grid grid-cols-12 gap-4 ml-7 xl:gap-56 lg:gap-56">
+            <div className="xl:col-span-1 lg:col-span-1 col-span-12 w-1/6"></div>
+            <div className="lg:col-span-1 lg:w- w-1/4"></div>
+
+            <div className="ml-24">
+              <button
+                onClick={() =>
+                  setShowModalCreateContrato(!showModalCreateContrato)
+                }
+              >
+                <Button className="grid grid-flow-col" variant="outlined">
+                  <PlusIcon className="h-5 w-5" />
+                  <span className="mt-1">Contrato</span>
+                </Button>
+              </button>
+              <CriarContratoModal
+                open={showModalCreateContrato}
+                setOpen={setShowModalCreateContrato}
+                cliente_id={clienteID}
+                setUpdateKey={setUpdateKey}
+              />
+            </div>
+          </div>
+
+          <br />
+          <Card className=" w-full overflow-x-auto">
+            <table className="w-full min-w-max table-auto text-left">
+              <thead>
+                <tr>
+                  {TABLE_HEAD.map((head, index) => (
+                    <th
+                      key={index}
+                      className="border-b- px-14 py-4"
+                      style={{ backgroundColor: "#E0DFDF" }}
+                    >
+                      <Typography
+                        variant="small"
+                        color="blue-gray"
+                        className="font-normal leading-none opacity-70"
+                      >
+                        {head}
+                      </Typography>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filterData(contrato?.contrato || []).map((contrato, index) => (
+                  <tr key={contrato.contrato_id}>
+                    <td className="px-14 py-4 border-b border-blue-gray-50">
+                      {contrato?.nome}
+                    </td>
+
+                    <td className="px-14 py-4 border-b border-blue-gray-50">
+                      <ToggleButton
+                        initialState={contrato?.ativo}
+                        onChange={(isChecked: boolean) =>
+                          toggleUserSelection(contrato?.contrato_id, isChecked)
+                        }
+                      />
+                    </td>
+                    <td className="px-12 py-4 border-b border-blue-gray-50">
+                      <div className="font-medium flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            setShowModalUpdate(!showModalUpdate);
+                          }}
+                        >
+                          <PencilSquareIcon className="h-6 w-6" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowModalDetalhes(!showModalDetalhes);
+                            setContratoID(contrato?.contrato_id);
+                          }}
+                        >
+                          <ClipboardDocumentListIcon className="h-6 w-6" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                <UpdateContratoModal
+                  open={showModalUpdate}
+                  setOpen={setShowModalUpdate}
+                  setUpdateKey={setUpdateKey}
+                  cliente_id={contratoID}
+                />
+                <DetalheContratoModal
+                  open={showModalDetalhes}
+                  setOpen={setShowModalDetalhes}
+                  contrato_id={contratoID}
+                />
+              </tbody>
+            </table>
+          </Card>
+        </div>
       </div>
+      <div className="flex ml-4 mt-10 gap-10 w-1/5">
+        <Select
+          label="Filtrar"
+          placeholder={undefined}
+          onPointerEnterCapture={undefined}
+          onPointerLeaveCapture={undefined}
+          value={String(selectedContratoID)}
+          onChange={(value) => setSelectedContratoID(Number(value))}
+        >
+          {contrato && contrato.contrato.length > 0 ? (
+            contrato?.contrato?.map((contrato) => (
+              <Option
+                key={contrato?.contrato_id}
+                value={String(contrato?.contrato_id)}
+              >
+                {contrato?.nome}
+              </Option>
+            ))
+          ) : (
+            <Option value="">Sem contratos</Option>
+          )}
+        </Select>
+        <Select
+          label="Filtrar por estado da visita"
+          onChange={(value: any) => setEstado(value)}
+        >
+          <Option value="">Todos</Option>
+          <Option value="cancelada">Cancelada</Option>
+          <Option value="terminada">Terminada</Option>
+        </Select>
+        <Input
+          type="date"
+          label="Filtrar até a data:"
+          onChange={(e) => setSelectedDate(new Date(e.target.value))}
+        />
+
+        <div className="flex">
+          <Button
+            style={{ backgroundColor: "#0F124C", width: "200px" }}
+            onClick={clearfilters}
+          >
+            Limpar Filtros
+          </Button>
+        </div>
+      </div>
+
+      <CardGrid className="gap-2">
+        {visitasFiltradas?.map((visita) => (
+          <CardGrid key={visita.visita_id}>
+            <Card
+              className="border-l-8 flex rounded-s shadow-2xl"
+              style={
+                visita.estado_servico === "terminada"
+                  ? { borderColor: "#95d7b0" }
+                  : visita.estado_servico === "cancelada"
+                  ? { borderColor: "#fa7f72" }
+                  : visita.estado_servico === "agendada"
+                  ? { borderColor: "#4682b4" }
+                  : visita.estado_servico === "nao aprovada"
+                  ? { borderColor: "#CE5959" }
+                  : visita.estado_servico === "a aguardar"
+                  ? { borderColor: "#B6BBC4" }
+                  : visita.estado_servico === "pendente"
+                  ? { borderColor: "#0F124C" }
+                  : { backgroundColor: "#B6BBC4" }
+              }
+            >
+              <CardHeader className="flex">
+                <Link
+                  href={{
+                    pathname: "/detalhes/detalhevisita",
+                    query: { id: visita.agenda_servico_id },
+                  }}
+                >
+                  <ChevronRightIcon className="ml-80 mt-2 h-6 w-6 text-black" />
+                </Link>
+              </CardHeader>
+              <CardBody>
+                <span className="font-semibold text-black py-1 ">Nome: </span>
+                <span>
+                  {visita?.servicos?.map((servico) => (
+                    <span key={servico.nome} className="text-black">
+                      {servico.nome}
+                    </span>
+                  ))}
+                </span>
+
+                <div className="py-1">
+                  <span className="font-semibold text-black">Data:</span>{" "}
+                  <span className="text-black">{visita.data_visita}</span>
+                </div>
+                <div className="py-1">
+                  <span className="font-semibold text-black">
+                    Hora de Início:
+                  </span>{" "}
+                  <span className="text-black">
+                    {visita.hora_visita_inicio.split(":").slice(0, 2).join(":")}{" "}
+                    {" -"}{" "}
+                    {visita.hora_visita_fim.split(":").slice(0, 2).join(":")}
+                  </span>
+                </div>
+                <div className="py-1 text-black">
+                  <span className="font-semibold text-black">Estado:</span>{" "}
+                  {visita.estado_servico}
+                </div>
+                <div className="py-1 text-black">
+                  <span className="font-semibold">Equipa:</span>{" "}
+                  {visita.agenda_servico.equipa.nome}
+                </div>
+              </CardBody>
+            </Card>
+          </CardGrid>
+        ))}
+      </CardGrid>
+      <br />
+      <UpdateClienteModal
+        open={showModalUpdate2}
+        setOpen={setShowModalUpdate2}
+      />
     </main>
   );
 }

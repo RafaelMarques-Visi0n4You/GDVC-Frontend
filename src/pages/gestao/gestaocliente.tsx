@@ -5,10 +5,10 @@ import DetalheClienteModal from "@/common/components/detalhecliente";
 import UpdateClienteModal from "@/common/components/updatecliente";
 import api from "@/common/services/api";
 import {
-  ClipboardDocumentListIcon,
   LockClosedIcon,
   PencilSquareIcon,
   PlusIcon,
+  UserIcon,
 } from "@heroicons/react/24/outline";
 import {
   Button,
@@ -95,15 +95,7 @@ interface Conta {
   }[];
 }
 
-const TABLE_HEAD = [
-  "Nome",
-  "Email",
-  "Contacto",
-  "Morada",
-  "Contratos",
-  "Conta",
-  "Ações",
-];
+const TABLE_HEAD = ["Nome", "Email", "Contacto", "Conta", "Ações"];
 
 export default function DefaultTable() {
   const [serviceData, setServiceData] = useState<Data | null>(null);
@@ -123,7 +115,10 @@ export default function DefaultTable() {
   const data = useContext(AuthContext);
 
   useEffect(() => {
-    if (data?.user?.tipo_utilizador !== "nivel4") {
+    if (
+      data?.user?.tipo_utilizador !== "nivel4" &&
+      data?.user?.tipo_utilizador !== "nivel5"
+    ) {
       router.push("/permissiondenied");
     }
     loadData();
@@ -262,6 +257,11 @@ export default function DefaultTable() {
         console.log(error);
       }
     }
+  }
+
+  function splitName(fullName: string) {
+    const name = fullName.split(" ");
+    return `${name[0]} ${name[name.length - 1]}`;
   }
 
   function filterData(clientes: any[]) {
@@ -419,7 +419,7 @@ export default function DefaultTable() {
         </div>
       </div>
       <br />
-      <Card className="h-full w-full overflow-y-scroll">
+      <Card className="h-full w-full overflow-x-scroll">
         <table className="w-full min-w-max table-auto text-left">
           <thead>
             <tr>
@@ -444,7 +444,16 @@ export default function DefaultTable() {
             {filterData(serviceData?.clientes || []).map((cliente, index) => (
               <tr key={index}>
                 <td className="px-24 py-4 border-b border-blue-gray-50">
-                  {cliente.nome_completo}
+                  <Link
+                    href={{
+                      query: {
+                        id: serviceData?.clientes?.[index]?.cliente_id,
+                      },
+                      pathname: "/detalhes/detalhecliente",
+                    }}
+                  >
+                    {splitName(cliente.nome_completo)}
+                  </Link>
                 </td>
                 <td className="px-24 py-4 border-b border-blue-gray-50">
                   {cliente.email}
@@ -452,19 +461,7 @@ export default function DefaultTable() {
                 <td className="px-24 py-4 border-b border-blue-gray-50">
                   {cliente.contacto}
                 </td>
-                <td className="px-24 py-4 border-b border-blue-gray-50">
-                  {cliente.morada}, {cliente.localidade}, {cliente.cod_postal}
-                </td>
-                <td className="px-24 py-4 border-b border-blue-gray-50">
-                  {Contratos?.contratos &&
-                    Contratos?.contratos
-                      .filter(
-                        (contrato) => contrato.cliente_id === cliente.cliente_id
-                      )
-                      .map((contrato) => (
-                        <div key={contrato.contrato_id}>{contrato.nome}</div>
-                      ))}
-                </td>
+
                 <td className="px-22 py-4 border-b border-blue-gray-50">
                   {servicesData?.contasClientes
                     ? servicesData?.contasClientes.map((conta, index) => {
@@ -510,7 +507,7 @@ export default function DefaultTable() {
                         pathname: "/detalhes/detalhecliente",
                       }}
                     >
-                      <ClipboardDocumentListIcon className="h-6 w-6" />
+                      <UserIcon className="h-6 w-6" />
                     </Link>
                     <Link
                       href={{

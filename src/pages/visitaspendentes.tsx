@@ -108,7 +108,7 @@ const Button = styled.button`
   }
 `;
 
-export default function VisitHistory() {
+export default function VisitasPendentes() {
   const data = useContext(AuthContext);
 
   const [visits, setVisits] = useState<Data | null>(null);
@@ -136,15 +136,29 @@ export default function VisitHistory() {
     if (token) {
       api.defaults.headers["Authorization"] = `Bearer ${token}`;
       try {
-        const response = await api.post("/visita/getByEmpresa", {
-          empresa_id: data.user.funcionario.empresa_id,
-        });
-        if (response.status === 200) {
-          setVisits(response.data);
+        if (data.user?.tipo_utilizador === "nivel3") {
+          const response = await api.post("/visita/getVisitasPendentes", {
+            empresa_id: data.user?.funcionario?.empresa_id,
+            departamento_id: data.user?.funcionario?.departamento_id,
+          });
+          if (response.status === 200) {
+            setVisits(response.data);
 
-          console.log("asgdfasdhgadhfdf: ", response.data);
+            console.log(response.data);
 
-          setIsLoading(false);
+            setIsLoading(false);
+          }
+        }
+        {
+          const response = await api.post("/visita/getVisitasPendentesnivel4", {
+            empresa_id: data.user?.funcionario?.empresa_id,
+          });
+          if (response.status === 200) {
+            setVisits(response.data);
+
+            console.log(response.data);
+            setIsLoading(false);
+          }
         }
       } catch (error) {
         console.error("Erro ao carregar dados:", error);
@@ -152,7 +166,12 @@ export default function VisitHistory() {
     }
   }
 
+  useEffect(() => {
+    getVisits();
+  }, [selectedDate]);
+
   async function getClients() {
+    setIsLoading(true);
     const token = getCookie("token");
     if (token) {
       api.defaults.headers["Authorization"] = `Bearer ${token}`;
@@ -162,6 +181,7 @@ export default function VisitHistory() {
         });
         if (response.status === 200) {
           setClients(response.data);
+          setIsLoading(false);
         }
       } catch (error) {
         console.error("Erro ao carregar dados:", error);
@@ -243,8 +263,6 @@ export default function VisitHistory() {
   const uniqueEquipes = new Set();
   const uniqueVisitas = visits?.visitas
     ? visits?.visitas?.filter((visita) => {
-        visita?.estado_servico === "terminada" ||
-          visita?.estado_servico === "cancelada";
         const equipeId = visita?.agenda_servico?.equipa?.equipa_id;
         if (uniqueEquipes?.has(equipeId)) {
           return false;
@@ -257,8 +275,6 @@ export default function VisitHistory() {
   const uniqueServico = new Set();
   const uniqueServicos = visits?.visitas
     ? visits?.visitas?.filter((visita) => {
-        visita?.estado_servico === "terminada" ||
-          visita?.estado_servico === "cancelada";
         const servicoID = visita?.servicos[0]?.servico_id;
         if (uniqueServico?.has(servicoID)) {
           return false;
@@ -274,20 +290,14 @@ export default function VisitHistory() {
   ) {
     if (cliente_id === null) return visitas;
     return visitas.filter(
-      (visita) =>
-        visita?.contrato?.cliente?.cliente_id === cliente_id &&
-        (visita?.estado_servico === "terminada" ||
-          visita?.estado_servico === "cancelada")
+      (visita) => visita?.contrato?.cliente?.cliente_id === cliente_id
     );
   }
 
   function filterByEquipa(visitas: Data["visitas"], equipa_id: number | null) {
     if (equipa_id === null) return visitas;
     return visitas.filter(
-      (visita) =>
-        visita.agenda_servico.equipa.equipa_id === equipa_id &&
-        (visita.estado_servico === "terminada" ||
-          visita.estado_servico === "cancelada")
+      (visita) => visita.agenda_servico.equipa.equipa_id === equipa_id
     );
   }
 
@@ -310,10 +320,7 @@ export default function VisitHistory() {
   ) {
     if (servico_id === null) return visitas;
     return visitas.filter(
-      (visita) =>
-        (visita.servicos[0].servico_id === servico_id &&
-          visita.estado_servico === "terminada") ||
-        visita.estado_servico === "cancelada"
+      (visita) => visita.servicos[0].servico_id === servico_id
     );
   }
 
@@ -326,11 +333,7 @@ export default function VisitHistory() {
   }
 
   const filteredByEquipa = filterByEquipa(
-    visits?.visitas.filter(
-      (visita) =>
-        visita?.estado_servico === "terminada" ||
-        visita?.estado_servico === "cancelada"
-    ) || [],
+    visits?.visitas || [],
     selectedEquipa
   );
   const filteredByDate = filterByDate(filteredByEquipa, selectedDate);
@@ -353,7 +356,7 @@ export default function VisitHistory() {
         </div>
       )}
       <div className="flex justify-center p-3">
-        <Typography variant="h4">Histórico de Visitas</Typography>
+        <Typography variant="h4">Visitas Pendentes</Typography>
       </div>
       {nivelSuperior && (
         <>
@@ -438,17 +441,6 @@ export default function VisitHistory() {
                 )}
               </Select>
             </div>
-
-            <div className="flex justify-center p-3 gap-2 w-64 ml-7">
-              <Select
-                label="Filtrar por estado da visita"
-                onChange={(value: any) => setEstado(value)}
-              >
-                <Option value="">Todos</Option>
-                <Option value="cancelada">Cancelada</Option>
-                <Option value="terminada">Terminada</Option>
-              </Select>
-            </div>
             <div className="flex  p-3 gap-2 w-64 ml-7">
               <Button
                 className="w-52"
@@ -461,20 +453,11 @@ export default function VisitHistory() {
           </CardGrid>
           <CardGrid>
             {filteredByCliente.length > 0 ? (
-              filteredByCliente.map((visita) => (
+              filteredByCliente?.map((visita) => (
                 <CardGrid key={visita.visita_id}>
                   <Card
                     style={{
-                      backgroundColor:
-                        visita.estado_servico === "agendada"
-                          ? "#4682b4"
-                          : visita.estado_servico === "em andamento"
-                          ? "#b2c1b8"
-                          : visita.estado_servico === "terminada"
-                          ? "#95d7b0"
-                          : visita.estado_servico === "cancelada"
-                          ? "#fa7f72"
-                          : "#fa7f72",
+                      backgroundColor: "#B6BBC4",
                     }}
                   >
                     <CardHeader>
@@ -540,7 +523,7 @@ export default function VisitHistory() {
               ))
             ) : (
               <Typography variant="h6" className="text-center">
-                Não há visitas no histórico.
+                Não há visitas pendentes!
               </Typography>
             )}
           </CardGrid>
@@ -605,16 +588,6 @@ export default function VisitHistory() {
               </Select>
             </div>
 
-            <div className="flex justify-center p-3 gap-2 w-64 ml-7">
-              <Select
-                label="Filtrar por estado da visita"
-                onChange={(value: any) => setEstado(value)}
-              >
-                <Option value="">Todos</Option>
-                <Option value="cancelada">Cancelada</Option>
-                <Option value="terminada">Terminada</Option>
-              </Select>
-            </div>
             <div className="flex  p-3 gap-2 w-64 ml-7">
               <Button
                 className="w-52"
@@ -627,20 +600,11 @@ export default function VisitHistory() {
           </CardGrid>
           <CardGrid>
             {filteredByCliente.length > 0 ? (
-              filteredByCliente.map((visita) => (
+              filteredByCliente?.map((visita) => (
                 <CardGrid key={visita.visita_id}>
                   <Card
                     style={{
-                      backgroundColor:
-                        visita.estado_servico === "agendada"
-                          ? "#4682b4"
-                          : visita.estado_servico === "em andamento"
-                          ? "#b2c1b8"
-                          : visita.estado_servico === "terminada"
-                          ? "#95d7b0"
-                          : visita.estado_servico === "cancelada"
-                          ? "#fa7f72"
-                          : "#fa7f72",
+                      backgroundColor: "#B6BBC4",
                     }}
                   >
                     <CardHeader>
@@ -706,7 +670,7 @@ export default function VisitHistory() {
               ))
             ) : (
               <Typography variant="h6" className="text-center">
-                Não há visitas no histórico.
+                Não há visitas pendentes!
               </Typography>
             )}
           </CardGrid>

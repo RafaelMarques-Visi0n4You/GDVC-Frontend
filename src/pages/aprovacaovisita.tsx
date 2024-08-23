@@ -2,7 +2,7 @@ import { AuthContext } from "@/common/components/AuthContext";
 import NotificacoesModal from "@/common/components/notifications";
 import api from "@/common/services/api";
 import styled from "@emotion/styled";
-import { ExclamationTriangleIcon } from "@heroicons/react/24/solid";
+import { ChevronRightIcon } from "@heroicons/react/24/solid";
 import { Spinner, Typography } from "@material-tailwind/react";
 import { getCookie } from "cookies-next";
 import Link from "next/link";
@@ -95,6 +95,8 @@ export default function VisitHistory() {
   const [isLoading, setIsLoading] = useState(true);
   const [showModalAccept, setShowModalAccept] = useState(false);
   const [updateKey, setUpdateKey] = useState(0);
+  const [id1, setId1] = useState(0);
+  const [id2, setId2] = useState(0);
 
   async function getVisits() {
     setIsLoading(true);
@@ -111,10 +113,14 @@ export default function VisitHistory() {
             setVisits(response.data);
 
             console.log(response.data);
+
             setIsLoading(false);
           }
         }
-        if (data.user?.tipo_utilizador === "nivel4") {
+        if (
+          data.user?.tipo_utilizador === "nivel4" ||
+          data.user?.tipo_utilizador === "nivel5"
+        ) {
           const response = await api.post("/visita/getVisitasPendentesnivel4", {
             empresa_id: data.user?.funcionario?.empresa_id,
           });
@@ -134,7 +140,8 @@ export default function VisitHistory() {
   useEffect(() => {
     if (
       data?.user?.tipo_utilizador !== "nivel4" &&
-      data?.user?.tipo_utilizador !== "nivel3"
+      data?.user?.tipo_utilizador !== "nivel3" &&
+      data?.user?.tipo_utilizador !== "nivel5"
     ) {
       router.push("/permissiondenied");
     }
@@ -166,15 +173,11 @@ export default function VisitHistory() {
                   </CardTitle>
                   <Link
                     href={{
-                      query: {
-                        id: visita.visita_id,
-                      },
+                      pathname: "/detalhes/detalhevisita",
+                      query: { id: visita.agenda_servico_id },
                     }}
-                    onClick={() =>
-                      setShowModalAccept((showModalAccept) => !showModalAccept)
-                    }
                   >
-                    <ExclamationTriangleIcon className="mt-7 h-6 w-6 text-gray-500" />
+                    <ChevronRightIcon className="mt-7 h-6 w-6 text-gray" />
                   </Link>
                 </CardHeader>
                 <CardBody>
@@ -220,6 +223,8 @@ export default function VisitHistory() {
         open={showModalAccept}
         setOpen={setShowModalAccept}
         setUpdateKey={setUpdateKey}
+        id1={id1}
+        id2={id2}
       />
     </div>
   );

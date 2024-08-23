@@ -50,6 +50,11 @@ interface Data {
     cliente_id: number;
     nome_completo: string;
   }[];
+  notas: {
+    nota_id: number;
+    descricao: string;
+    data: string;
+  }[];
 }
 
 const CardGrid = styled.div`
@@ -108,7 +113,7 @@ const Button = styled.button`
   }
 `;
 
-export default function VisitHistory() {
+export default function AAguardarVisitas() {
   const data = useContext(AuthContext);
 
   const [visits, setVisits] = useState<Data | null>(null);
@@ -119,10 +124,13 @@ export default function VisitHistory() {
   const [selectedServico, setSelectedServico] = useState<number | null>(null);
   const [clients, setClients] = useState<Data | null>(null);
   const [selectedCliente, setSelectedCliente] = useState<number | null>(null);
+  const [notas, setNotas] = useState<Data | null>(null);
+  const [visitas_id, setVisitas] = useState(0);
 
   useEffect(() => {
     getVisits();
     getClients();
+
     if (selectedDate !== null) {
       setSelectedEquipa(null);
       setSelectedServico(null);
@@ -136,7 +144,7 @@ export default function VisitHistory() {
     if (token) {
       api.defaults.headers["Authorization"] = `Bearer ${token}`;
       try {
-        const response = await api.post("/visita/getByEmpresa", {
+        const response = await api.post("/visita/getAguardarVisitas", {
           empresa_id: data.user.funcionario.empresa_id,
         });
         if (response.status === 200) {
@@ -243,8 +251,6 @@ export default function VisitHistory() {
   const uniqueEquipes = new Set();
   const uniqueVisitas = visits?.visitas
     ? visits?.visitas?.filter((visita) => {
-        visita?.estado_servico === "terminada" ||
-          visita?.estado_servico === "cancelada";
         const equipeId = visita?.agenda_servico?.equipa?.equipa_id;
         if (uniqueEquipes?.has(equipeId)) {
           return false;
@@ -257,8 +263,6 @@ export default function VisitHistory() {
   const uniqueServico = new Set();
   const uniqueServicos = visits?.visitas
     ? visits?.visitas?.filter((visita) => {
-        visita?.estado_servico === "terminada" ||
-          visita?.estado_servico === "cancelada";
         const servicoID = visita?.servicos[0]?.servico_id;
         if (uniqueServico?.has(servicoID)) {
           return false;
@@ -274,20 +278,14 @@ export default function VisitHistory() {
   ) {
     if (cliente_id === null) return visitas;
     return visitas.filter(
-      (visita) =>
-        visita?.contrato?.cliente?.cliente_id === cliente_id &&
-        (visita?.estado_servico === "terminada" ||
-          visita?.estado_servico === "cancelada")
+      (visita) => visita?.contrato?.cliente?.cliente_id === cliente_id
     );
   }
 
   function filterByEquipa(visitas: Data["visitas"], equipa_id: number | null) {
     if (equipa_id === null) return visitas;
     return visitas.filter(
-      (visita) =>
-        visita.agenda_servico.equipa.equipa_id === equipa_id &&
-        (visita.estado_servico === "terminada" ||
-          visita.estado_servico === "cancelada")
+      (visita) => visita.agenda_servico.equipa.equipa_id === equipa_id
     );
   }
 
@@ -310,11 +308,38 @@ export default function VisitHistory() {
   ) {
     if (servico_id === null) return visitas;
     return visitas.filter(
-      (visita) =>
-        (visita.servicos[0].servico_id === servico_id &&
-          visita.estado_servico === "terminada") ||
-        visita.estado_servico === "cancelada"
+      (visita) => visita.servicos[0].servico_id === servico_id
     );
+  }
+
+  function handleEstadoChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    setEstado(e.target.value);
+  }
+
+  function handleClienteChange(clienteId: number | null) {
+    setSelectedCliente(clienteId);
+  }
+
+  function handleEquipaChange(equipaId: number | null) {
+    setSelectedEquipa(equipaId);
+  }
+
+  function handleServicoChange(servicoId: number | null) {
+    setSelectedServico(servicoId);
+  }
+
+  let visitasFiltradas = visits?.visitas;
+  if (selectedEquipa !== null) {
+    visitasFiltradas = filterByEquipa(visitasFiltradas, selectedEquipa);
+  }
+  if (selectedServico !== null) {
+    visitasFiltradas = filterByServico(visitasFiltradas, selectedServico);
+  }
+  if (selectedDate !== null) {
+    visitasFiltradas = filterByDate(visitasFiltradas, selectedDate);
+  }
+  if (selectedCliente !== null) {
+    visitasFiltradas = filterByCliente(visitasFiltradas, selectedCliente);
   }
 
   function clearfilters() {
@@ -326,11 +351,7 @@ export default function VisitHistory() {
   }
 
   const filteredByEquipa = filterByEquipa(
-    visits?.visitas.filter(
-      (visita) =>
-        visita?.estado_servico === "terminada" ||
-        visita?.estado_servico === "cancelada"
-    ) || [],
+    visits?.visitas || [],
     selectedEquipa
   );
   const filteredByDate = filterByDate(filteredByEquipa, selectedDate);
@@ -353,7 +374,7 @@ export default function VisitHistory() {
         </div>
       )}
       <div className="flex justify-center p-3">
-        <Typography variant="h4">Histórico de Visitas</Typography>
+        <Typography variant="h4">Visitas a aguardar</Typography>
       </div>
       {nivelSuperior && (
         <>
@@ -413,7 +434,6 @@ export default function VisitHistory() {
                 )}
               </Select>
             </div>
-
             <div className="flex justify-center p-3 gap-2 w-64 ml-7">
               <Select
                 label="Filtrar por Equipa"
@@ -438,18 +458,7 @@ export default function VisitHistory() {
                 )}
               </Select>
             </div>
-
-            <div className="flex justify-center p-3 gap-2 w-64 ml-7">
-              <Select
-                label="Filtrar por estado da visita"
-                onChange={(value: any) => setEstado(value)}
-              >
-                <Option value="">Todos</Option>
-                <Option value="cancelada">Cancelada</Option>
-                <Option value="terminada">Terminada</Option>
-              </Select>
-            </div>
-            <div className="flex  p-3 gap-2 w-64 ml-7">
+            <div className="flex p-3 gap-2 w-64 ml-7">
               <Button
                 className="w-52"
                 style={{ backgroundColor: "#0F124C" }}
@@ -459,24 +468,12 @@ export default function VisitHistory() {
               </Button>
             </div>
           </CardGrid>
+
           <CardGrid>
             {filteredByCliente.length > 0 ? (
               filteredByCliente.map((visita) => (
                 <CardGrid key={visita.visita_id}>
-                  <Card
-                    style={{
-                      backgroundColor:
-                        visita.estado_servico === "agendada"
-                          ? "#4682b4"
-                          : visita.estado_servico === "em andamento"
-                          ? "#b2c1b8"
-                          : visita.estado_servico === "terminada"
-                          ? "#95d7b0"
-                          : visita.estado_servico === "cancelada"
-                          ? "#fa7f72"
-                          : "#fa7f72",
-                    }}
-                  >
+                  <Card style={{ backgroundColor: "#B6BBC4" }}>
                     <CardHeader>
                       {visita.servicos.map((servico) => (
                         <CardTitle
@@ -540,7 +537,7 @@ export default function VisitHistory() {
               ))
             ) : (
               <Typography variant="h6" className="text-center">
-                Não há visitas no histórico.
+                Não há visitas a aguardar!
               </Typography>
             )}
           </CardGrid>
@@ -605,17 +602,7 @@ export default function VisitHistory() {
               </Select>
             </div>
 
-            <div className="flex justify-center p-3 gap-2 w-64 ml-7">
-              <Select
-                label="Filtrar por estado da visita"
-                onChange={(value: any) => setEstado(value)}
-              >
-                <Option value="">Todos</Option>
-                <Option value="cancelada">Cancelada</Option>
-                <Option value="terminada">Terminada</Option>
-              </Select>
-            </div>
-            <div className="flex  p-3 gap-2 w-64 ml-7">
+            <div className="flex p-3 gap-2 w-64 ml-7">
               <Button
                 className="w-52"
                 style={{ backgroundColor: "#0F124C" }}
@@ -625,24 +612,17 @@ export default function VisitHistory() {
               </Button>
             </div>
           </CardGrid>
+
           <CardGrid>
-            {filteredByCliente.length > 0 ? (
+            {filteredByCliente.filter((visita) => {
+              return (
+                visita?.agenda_servico?.equipa?.equipa_id ===
+                data?.user?.funcionario?.equipa_id
+              );
+            }).length > 0 ? (
               filteredByCliente.map((visita) => (
                 <CardGrid key={visita.visita_id}>
-                  <Card
-                    style={{
-                      backgroundColor:
-                        visita.estado_servico === "agendada"
-                          ? "#4682b4"
-                          : visita.estado_servico === "em andamento"
-                          ? "#b2c1b8"
-                          : visita.estado_servico === "terminada"
-                          ? "#95d7b0"
-                          : visita.estado_servico === "cancelada"
-                          ? "#fa7f72"
-                          : "#fa7f72",
-                    }}
-                  >
+                  <Card style={{ backgroundColor: "#B6BBC4" }}>
                     <CardHeader>
                       {visita.servicos.map((servico) => (
                         <CardTitle
@@ -706,7 +686,7 @@ export default function VisitHistory() {
               ))
             ) : (
               <Typography variant="h6" className="text-center">
-                Não há visitas no histórico.
+                Não há visitas a aguardar!
               </Typography>
             )}
           </CardGrid>
