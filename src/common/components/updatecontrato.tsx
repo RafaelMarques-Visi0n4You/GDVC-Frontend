@@ -87,22 +87,24 @@ export default function UpdateContratoModal({
     setRefresh(!refresh); // Fecha o diálogo quando chamado
   };
 
+  const [loading, setLoading] = useState(true);
+
   const loadData = async () => {
     const token = getCookie("token");
     if (token) {
       api.defaults.headers["Authorization"] = `Bearer ${token}`;
       try {
         const response = await api.get("/cliente/get");
-        console.log("Dagdsgds:", response.data);
         setApiCliente(response.data);
 
         const response2 = await api.post("/servico/getServicosEmpresa", {
           empresa_id: data?.user?.funcionario?.empresa_id,
         });
-        console.log("adfhadfh:", response2.data);
         setServicos(response2.data);
       } catch (error) {
         console.error("Erro ao carregar dados:", error);
+      } finally {
+        setLoading(false);
       }
     }
   };
@@ -118,7 +120,10 @@ export default function UpdateContratoModal({
             id: cliente_id,
           })
           .then((response) => {
-            console.log("Resposta:", response.data.contrato?.nome);
+            console.log(
+              "Resposta:",
+              response.data.contrato?.servico?.servico_id
+            );
             setNome(response.data.contrato?.nome);
             setDescricao(response.data.contrato?.descricao);
             setCliente(response.data.contrato?.cliente_id);
@@ -128,9 +133,12 @@ export default function UpdateContratoModal({
             setLocalidadeServico(response.data.contrato?.localidade_servico);
             setMoradaServico(response.data.contrato?.morada_servico);
             setTipoContrato(response.data.contrato?.tipo_contrato);
-            setServicoId(response.data.contrato?.servico_id);
-            setPrioridade(response.data.contrato?.prioridade);
+            setServicoId(response.data.contrato?.servico?.servico_id || null);
+            setPrioridade(
+              response.data.contrato?.contratohasservico?.prioritario
+            );
           })
+
           .catch((error) => {
             // Trate o erro adequadamente, por exemplo, exibindo uma mensagem de erro
             console.error("Erro ao obter dados da equipa:", error);
@@ -144,7 +152,7 @@ export default function UpdateContratoModal({
 
   useEffect(() => {
     loadData();
-  }, [refresh]);
+  }, [refresh, cliente_id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -152,6 +160,7 @@ export default function UpdateContratoModal({
     if (token) {
       api.defaults.headers["Authorization"] = `Bearer ${token}`;
       try {
+        console.log("Submitting servico_id:", servico_id); // Verificar o valor de servico_id
         const response = await api.put(`/contrato/update/${cliente_id}`, {
           nome: nome,
           descricao: descricao,
@@ -163,7 +172,7 @@ export default function UpdateContratoModal({
           morada_servico: morada_servico,
           tipo_contrato: tipo_contrato,
           servico_id: servico_id,
-          prioridade: prioridade,
+          prioritario: prioridade,
         });
         console.log("Resposta:", response.data);
         setUpdateKey((prev) => prev + 1);
@@ -283,19 +292,27 @@ export default function UpdateContratoModal({
             <div className="w-1/2">
               <Select
                 label="Serviço"
-                value={String(servico_id)}
+                value={servico_id !== null ? String(servico_id) : ""}
                 onChange={(value) => {
-                  setServicoId(Number(value));
+                  const newValue = Number(value);
+                  console.log("Novo servico_id:", newValue); // Verificar o valor selecionado
+                  setServicoId(newValue);
                 }}
               >
-                {servicos?.servicos?.map((servico) => (
-                  <Option
-                    key={servico?.servico_id}
-                    value={String(servico?.servico_id)}
-                  >
-                    {servico?.nome}
-                  </Option>
-                ))}
+                {loading ? (
+                  <Option value="">Carregando...</Option>
+                ) : servicos?.servicos?.length ? (
+                  servicos.servicos.map((servico) => (
+                    <Option
+                      key={servico.servico_id}
+                      value={String(servico.servico_id)}
+                    >
+                      {servico.nome}
+                    </Option>
+                  ))
+                ) : (
+                  <Option value="">Nenhum serviço disponível</Option>
+                )}
               </Select>
             </div>
           </div>

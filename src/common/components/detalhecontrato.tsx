@@ -71,7 +71,8 @@ export default function DetalheContratoModal({
 
   useEffect(() => {
     loadData();
-  }, [id, contrato_id]);
+    console.log("ID:", contrato_id);
+  }, [contrato_id]);
 
   async function loadData() {
     const token = getCookie("token");

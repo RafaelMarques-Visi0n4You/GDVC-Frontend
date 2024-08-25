@@ -95,7 +95,7 @@ export default function ContratoModal({
         </div>
         <div className="sm:gap-7 p-3" style={{ backgroundColor: "#F9FAFB" }}>
           <div>
-            <Card className="mt-6 ">
+            <Card>
               <CardBody>
                 <Typography variant="h5" color="blue-gray" className="mb-2">
                   {data?.contrato?.nome}
@@ -134,7 +134,7 @@ export default function ContratoModal({
               </CardBody>
             </Card>
 
-            <Card className="mt-6 h-fit">
+            <Card className="mt-3 h-fit">
               <CardBody>
                 <Typography color="blue-gray">
                   Descrição:&nbsp;
@@ -146,7 +146,7 @@ export default function ContratoModal({
             </Card>
           </div>
           <div>
-            <Card className="mt-6 ">
+            <Card className="mt-3 ">
               <CardBody>
                 <Typography color="blue-gray">Serviços:</Typography>
                 <div className="">
@@ -167,7 +167,7 @@ export default function ContratoModal({
             </Card>
           </div>
 
-          <div className="flex mt-4 mx-32">
+          <div className="flex mt-1 mx-32">
             <Button
               className="mt-3 xl:ml-24 lg:ml-18"
               style={{

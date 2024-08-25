@@ -502,6 +502,7 @@ export default function Home() {
                         <button
                           onClick={() => {
                             setShowModalUpdate(!showModalUpdate);
+                            setContratoID(contrato?.contrato_id);
                           }}
                         >
                           <PencilSquareIcon className="h-6 w-6" />
