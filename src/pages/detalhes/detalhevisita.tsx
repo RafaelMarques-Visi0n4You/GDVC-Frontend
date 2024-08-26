@@ -282,10 +282,12 @@ export default function Home() {
         const accept = window.confirm("Tem a certeza que deseja eliminar?");
         if (accept) {
           const response = await api.delete("/visita/delete/" + id);
-          toast.success("Visita eliminada com sucesso!");
-          console.log("response", response);
+          if (response.status === 200) {
+            toast.success("Visita eliminada com sucesso!");
+            console.log("response", response);
+            router.push("/home");
+          }
         }
-        router.push("/home");
       } catch (error) {
         console.error("Erro ao carregar dados:", error);
       }
@@ -432,7 +434,7 @@ export default function Home() {
               </Button>
               <Button
                 onClick={() => {
-                  setshowDialog(true);
+                  setshowDialog4(true);
                   setId1(serviceData?.agendaServico?.visita?.visita_id ?? 0);
                 }}
                 style={{ backgroundColor: "#FF7777" }}

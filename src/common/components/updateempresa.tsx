@@ -170,7 +170,7 @@ export default function UpdateEmpresaModal({
   };
 
   return (
-    <Dialog open={open}>
+    <Dialog open={open} size="lg">
       <div className="flex-col p-6">
         <Typography
           className="flex justify-center"

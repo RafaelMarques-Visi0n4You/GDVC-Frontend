@@ -275,7 +275,7 @@ export default function UpdateContratoModal({
 
           <br />
           <div className="flex flex-row gap-10">
-            <div className="w-1/2">
+            <div className="w-full">
               <Select
                 label="Prioritário"
                 onPointerEnterCapture={undefined}
@@ -287,32 +287,6 @@ export default function UpdateContratoModal({
               >
                 <Option value="Sim">Sim</Option>
                 <Option value="Nao">Não</Option>
-              </Select>
-            </div>
-            <div className="w-1/2">
-              <Select
-                label="Serviço"
-                value={servico_id !== null ? String(servico_id) : ""}
-                onChange={(value) => {
-                  const newValue = Number(value);
-                  console.log("Novo servico_id:", newValue); // Verificar o valor selecionado
-                  setServicoId(newValue);
-                }}
-              >
-                {loading ? (
-                  <Option value="">Carregando...</Option>
-                ) : servicos?.servicos?.length ? (
-                  servicos.servicos.map((servico) => (
-                    <Option
-                      key={servico.servico_id}
-                      value={String(servico.servico_id)}
-                    >
-                      {servico.nome}
-                    </Option>
-                  ))
-                ) : (
-                  <Option value="">Nenhum serviço disponível</Option>
-                )}
               </Select>
             </div>
           </div>

@@ -169,7 +169,7 @@ export default function UpdateEquipaModal({
               />
             </div>
             <div className="w-1/2">
-              <div className="w-83">
+              <div className="">
                 <Select
                   label="Cor"
                   value={cor_equipa}

@@ -285,7 +285,6 @@ export default function AssociarModal({
             </tbody>
           </table>
         </Card>
-        <br />
 
         <Typography variant="h6" color="blue-gray" className="mb-2 p-7">
           Adicionar categoria de serviço à equipa

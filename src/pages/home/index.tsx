@@ -249,7 +249,7 @@ export default function Home() {
 
         start: new Date(event.data_visita + "T" + event.hora_visita_inicio),
         end: new Date(event.data_visita + "T" + event.hora_visita_fim),
-        title: event.servicos[0].nome,
+        title: event.servicos[0]?.nome,
         allDay: false,
         id: event.visita_id,
         agenda_servico_id: event.agenda_servico_id,
