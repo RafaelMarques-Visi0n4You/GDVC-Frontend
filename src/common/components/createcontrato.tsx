@@ -176,7 +176,7 @@ export default function CriarContratoModal({
             morada_servico: formData.morada_servico,
             nome: formData.nome,
             tipo_contrato: formData.tipo_contrato,
-            servico_id: servico_id,
+            servico_id: formData.servico_id,
             prioritario: formData.prioritario,
 
             cliente_id: cliente_id,
@@ -342,7 +342,7 @@ export default function CriarContratoModal({
                   label="Serviço"
                   onPointerEnterCapture={undefined}
                   onPointerLeaveCapture={undefined}
-                  value={formData.servico_id.toString()}
+                  value={String(formData.servico_id)}
                   onChange={(value) => {
                     setFormData((prevData) => ({
                       ...prevData,
@@ -352,10 +352,10 @@ export default function CriarContratoModal({
                 >
                   {servico.servicos.map((servico) => (
                     <Option
-                      key={servico.servico_id}
-                      value={servico.servico_id.toString()}
+                      key={servico?.servico_id}
+                      value={String(servico?.servico_id)}
                     >
-                      {servico.nome}
+                      {servico?.nome}
                     </Option>
                   ))}
                 </Select>
