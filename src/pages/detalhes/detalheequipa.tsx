@@ -465,6 +465,11 @@ export default function DetalhesEquipa() {
           <Option value="">Todos</Option>
           <Option value="cancelada">Cancelada</Option>
           <Option value="terminada">Terminada</Option>
+          <Option value="agendada">Agendada</Option>
+          <Option value="nao aprovada">Não Aprovada</Option>
+          <Option value="a aguardar">A Aguardar</Option>
+          <Option value="pendente">Pendente</Option>
+          <Option value="em andamento">Em Andamento</Option>
         </Select>
         <Input
           type="date"

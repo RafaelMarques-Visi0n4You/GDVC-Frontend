@@ -335,6 +335,15 @@ export default function Home() {
                 : serviceData?.agendaServico?.visita?.estado_servico ===
                   "em andamento"
                 ? "#b2c1b8"
+                : serviceData?.agendaServico?.visita?.estado_servico ===
+                  "pendente"
+                ? "#0F124C"
+                : serviceData?.agendaServico?.visita?.estado_servico ===
+                  "nao aprovada"
+                ? "#CE5959"
+                : serviceData?.agendaServico?.visita?.estado_servico ===
+                  "a aguardar"
+                ? "#B6BBC4"
                 : "black",
             textDecoration:
               serviceData?.agendaServico?.visita?.estado_servico === "cancelada"

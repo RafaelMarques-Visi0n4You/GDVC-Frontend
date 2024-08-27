@@ -457,7 +457,7 @@ export default function VisitasPendentes() {
                 <CardGrid key={visita.visita_id}>
                   <Card
                     style={{
-                      backgroundColor: "#B6BBC4",
+                      backgroundColor: "#0F124C",
                     }}
                   >
                     <CardHeader>

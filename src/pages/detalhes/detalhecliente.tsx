@@ -537,7 +537,7 @@ export default function Home() {
       </div>
       <div className="flex ml-4 mt-10 gap-10 w-1/5">
         <Select
-          label="Filtrar"
+          label="Filtrar por contrato"
           placeholder={undefined}
           onPointerEnterCapture={undefined}
           onPointerLeaveCapture={undefined}
@@ -564,6 +564,11 @@ export default function Home() {
           <Option value="">Todos</Option>
           <Option value="cancelada">Cancelada</Option>
           <Option value="terminada">Terminada</Option>
+          <Option value="agendada">Agendada</Option>
+          <Option value="nao aprovada">Não Aprovada</Option>
+          <Option value="a aguardar">A Aguardar</Option>
+          <Option value="pendente">Pendente</Option>
+          <Option value="em andamento">Em Andamento</Option>
         </Select>
         <Input
           type="date"
@@ -599,6 +604,8 @@ export default function Home() {
                   ? { borderColor: "#B6BBC4" }
                   : visita.estado_servico === "pendente"
                   ? { borderColor: "#0F124C" }
+                  : visita.estado_servico === "em andamento"
+                  ? { borderColor: "#b2c1b8" }
                   : { backgroundColor: "#B6BBC4" }
               }
             >
